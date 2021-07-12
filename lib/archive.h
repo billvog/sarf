@@ -7,9 +7,17 @@ typedef struct {
 	char* filename;
 } libsarf_archive;
 
+typedef struct {
+	char* filename;
+	int16_t size;
+	int16_t mod_time;
+} libsarf_stat_file;
+
 int libsarf_open_archive(libsarf_archive* archive, const char* filename);
 
 int libsarf_add_file_to_archive(libsarf_archive* archive, const char* target);
 int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* target, const char* dest);
+
+int libsarf_stat_files_from_archive(libsarf_archive* archive, libsarf_stat_file* stat_files[], int* file_count);
 
 #endif
