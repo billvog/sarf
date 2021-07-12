@@ -5,9 +5,17 @@ char* libsarf_err2str(int err) {
 	char* error_str = malloc(sizeof(char) * 100);
 
 	if (err == LSARF_A_CANNOT_OPEN)
-		strcpy(error_str, "File cannot be opened");
-	else
-		strcpy(error_str, "Unknown error occured");
+		strcpy(error_str, "Archive file cannot be opened");
+	else if (err == LSARF_T_CANNOT_OPEN)
+		strcpy(error_str, "Target file cannot be opened");
+	else if (err == LSARF_NOT_REG_FILE)
+		strcpy(error_str, "Not regural file");
+	else if (err == LSARF_O_CANNOT_CREATE)
+		strcpy(error_str, "Cannot create output file");
+	else if (err == LSARF_TiA_NOT_FOUND)
+		strcpy(error_str, "Target not found in archive");
+	else if (err == LSARF_OK) strcpy(error_str, "");
+	else strcpy(error_str, "Unknown error occured");
 
 	return error_str;
 }
@@ -36,13 +44,13 @@ int libsarf_add_file_to_archive(libsarf_archive* archive, const char* target) {
 	struct stat target_stat;
 	stat(target, &target_stat);
 
-	if (S_ISREG(target_stat.st_mode) != 0) {
+	if (!S_ISREG(target_stat.st_mode)) {
 		return LSARF_NOT_REG_FILE;
 	}
 
 	FILE* target_file = fopen(target, "rb");
 	if (target_file == NULL) {
-		return LSARF_A_CANNOT_OPEN;
+		return LSARF_T_CANNOT_OPEN;
 	}
 
 	char *target_buffer = malloc(sizeof(char) * (target_stat.st_size) + 1);
@@ -65,7 +73,62 @@ int libsarf_add_file_to_archive(libsarf_archive* archive, const char* target) {
 	return LSARF_OK;
 }
 
+int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* target, const char* dest) {
+	FILE* archive_file = fopen(archive->filename, "r");
+	if (archive_file == NULL) {
+		return LSARF_A_CANNOT_OPEN;
+	}
 
+	struct stat archive_stat;
+  	stat(archive->filename, &archive_stat);
+
+  	int file_found = -1;
+	while (ftell(archive_file) < archive_stat.st_size) {
+		char *file_name = malloc(sizeof(char) * LSARF_FILENAME_MAX);
+		fread(file_name, 1, LSARF_FILENAME_MAX, archive_file);
+
+		// clear filename from whitespaces
+		char* fn_back = file_name + strlen(file_name);
+	    while (isspace(*--fn_back));
+	    *(fn_back+1) = '\0';
+
+		char *file_size_str = malloc(sizeof(char) * 12);
+		fread(file_size_str, 1, 12, archive_file);
+		int file_size = atoi(file_size_str);
+
+		if (strcmp(file_name, target) != 0) {
+			fseek(archive_file, 12 + 32 + file_size + 32, SEEK_CUR);
+			continue;
+		}
+
+		file_found = 0;
+
+		fseek(archive_file, 12, SEEK_CUR);
+		fseek(archive_file, 32, SEEK_CUR);
+
+		char *file_buffer = malloc(sizeof(char) * (file_size + 1));
+		fread(file_buffer, sizeof(char), file_size, archive_file);
+
+		fseek(archive_file, 32, SEEK_CUR);
+
+		FILE* output_file = fopen(dest, "w");
+		if (output_file == NULL) {
+			return LSARF_O_CANNOT_CREATE;
+		}
+
+		fwrite(file_buffer, sizeof(char), file_size, output_file);
+
+		free(file_buffer);
+		fclose(output_file);
+
+		break;
+	}
+
+	if (file_found == -1)
+		return LSARF_TiA_NOT_FOUND;
+
+	return LSARF_OK;
+}
 
 
 

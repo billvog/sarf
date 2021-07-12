@@ -7,11 +7,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <ctype.h>
 
 #include "archive.h"
 #include "errors.h"
+#include "limits.h"
 
 #endif

@@ -8,6 +8,8 @@ typedef struct {
 } libsarf_archive;
 
 int libsarf_open_archive(libsarf_archive* archive, const char* filename);
+
 int libsarf_add_file_to_archive(libsarf_archive* archive, const char* target);
+int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* target, const char* dest);
 
 #endif
