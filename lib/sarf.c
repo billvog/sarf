@@ -4,15 +4,15 @@
 char* libsarf_err2str(int err) {
 	char* error_str = malloc(sizeof(char) * 100);
 
-	if (err == LSARF_A_CANNOT_OPEN)
+	if (err == LSARF_ERR_A_CANNOT_OPEN)
 		strcpy(error_str, "Archive file cannot be opened");
-	else if (err == LSARF_T_CANNOT_OPEN)
+	else if (err == LSARF_ERR_T_CANNOT_OPEN)
 		strcpy(error_str, "Target file cannot be opened");
-	else if (err == LSARF_NOT_REG_FILE)
+	else if (err == LSARF_ERR_NOT_REG_FILE)
 		strcpy(error_str, "Not regural file");
-	else if (err == LSARF_O_CANNOT_CREATE)
+	else if (err == LSARF_ERR_O_CANNOT_CREATE)
 		strcpy(error_str, "Cannot create output file");
-	else if (err == LSARF_TiA_NOT_FOUND)
+	else if (err == LSARF_ERR_TiA_NOT_FOUND)
 		strcpy(error_str, "Target not found in archive");
 	else if (err == LSARF_OK) strcpy(error_str, "");
 	else strcpy(error_str, "Unknown error occured");
@@ -24,7 +24,7 @@ char* libsarf_err2str(int err) {
 int libsarf_open_archive(libsarf_archive* archive, const char* filename) {
 	FILE* archive_file = fopen(filename, "rb");
 	if (archive_file == NULL) {
-		return LSARF_A_CANNOT_OPEN;
+		return LSARF_ERR_A_CANNOT_OPEN;
 	}
 
 	fclose(archive_file);
@@ -38,19 +38,19 @@ int libsarf_open_archive(libsarf_archive* archive, const char* filename) {
 int libsarf_add_file_to_archive(libsarf_archive* archive, const char* target) {
 	FILE* archive_file = fopen(archive->filename, "ab");
 	if (archive_file == NULL) {
-		return LSARF_A_CANNOT_OPEN;
+		return LSARF_ERR_A_CANNOT_OPEN;
 	}
 
 	struct stat target_stat;
 	stat(target, &target_stat);
 
 	if (!S_ISREG(target_stat.st_mode)) {
-		return LSARF_NOT_REG_FILE;
+		return LSARF_ERR_NOT_REG_FILE;
 	}
 
 	FILE* target_file = fopen(target, "rb");
 	if (target_file == NULL) {
-		return LSARF_T_CANNOT_OPEN;
+		return LSARF_ERR_T_CANNOT_OPEN;
 	}
 
 	char *target_buffer = malloc(sizeof(char) * (target_stat.st_size) + 1);
@@ -76,7 +76,7 @@ int libsarf_add_file_to_archive(libsarf_archive* archive, const char* target) {
 int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* target, const char* dest) {
 	FILE* archive_file = fopen(archive->filename, "r");
 	if (archive_file == NULL) {
-		return LSARF_A_CANNOT_OPEN;
+		return LSARF_ERR_A_CANNOT_OPEN;
 	}
 
 	struct stat archive_stat;
@@ -113,7 +113,7 @@ int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* targ
 
 		FILE* output_file = fopen(dest, "w");
 		if (output_file == NULL) {
-			return LSARF_O_CANNOT_CREATE;
+			return LSARF_ERR_O_CANNOT_CREATE;
 		}
 
 		fwrite(file_buffer, sizeof(char), file_size, output_file);
@@ -125,21 +125,24 @@ int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* targ
 	}
 
 	if (file_found == -1)
-		return LSARF_TiA_NOT_FOUND;
+		return LSARF_ERR_TiA_NOT_FOUND;
 
 	return LSARF_OK;
 }
 
-int libsarf_stat_files_from_archive(libsarf_archive* archive, libsarf_stat_file* stat_files[], int* file_count) {
+libsarf_stat_file** libsarf_stat_files_from_archive(libsarf_archive* archive, int* file_count) {
 	FILE* archive_file = fopen(archive->filename, "r");
 	if (archive_file == NULL) {
-		return LSARF_A_CANNOT_OPEN;
+		archive->error = LSARF_ERR_A_CANNOT_OPEN;
+		return NULL;
 	}
 
 	struct stat archive_stat;
   	stat(archive->filename, &archive_stat);
 
   	*file_count = 0;
+
+  	libsarf_stat_file** stat_files = malloc(10 * sizeof(libsarf_stat_file *));
 
 	while (ftell(archive_file) < archive_stat.st_size) {
 		(*file_count)++;
@@ -170,11 +173,14 @@ int libsarf_stat_files_from_archive(libsarf_archive* archive, libsarf_stat_file*
 		stat->filename = malloc(sizeof(char) * strlen(file_name) + 1);
 		strcpy(stat->filename, file_name);
 
+		printf("libsarf: %p\n", stat);
+
 		stat->size = file_size;
 		stat->mod_time = file_mtime;
 	}
 
-	return LSARF_OK;
+	archive->error = LSARF_OK;
+	return stat_files;
 }
 
 

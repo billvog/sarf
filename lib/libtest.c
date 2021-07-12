@@ -52,7 +52,7 @@ int main(int argc, const char *argv[]) {
 					}
 				}
 				else {
-					printf("Error: not enough options\nGet help with `%s --help`", argv[0]);
+					printf("Error: not enough options\nGet help with `%s --help`\n", argv[0]);
 					return 1;
 				}
 			}
@@ -77,7 +77,7 @@ int main(int argc, const char *argv[]) {
 					}
 				}
 				else {
-					printf("Error: not enough options\nGet help with `%s --help`", argv[0]);
+					printf("Error: not enough options\nGet help with `%s --help`\n", argv[0]);
 					return 1;
 				}
 			}
@@ -86,23 +86,21 @@ int main(int argc, const char *argv[]) {
 				if (argc > 3) {
 					if (strcmp(argv[3], "-all") == 0) {
 						int file_count = 0;
-						libsarf_stat_file* stat_files[10];
-						sarf_res = libsarf_stat_files_from_archive(archive, stat_files, &file_count);
-						if (sarf_res != 0) {
-							printf("Error: %s\n", libsarf_err2str(sarf_res));
-							return sarf_res;
+						libsarf_stat_file** stat_files = libsarf_stat_files_from_archive(archive, &file_count);
+						if (stat_files == NULL) {
+							printf("Error: %s\n", libsarf_err2str(archive->error));
+							return 1;
 						}
 
 						for (int i = 0; i < file_count; i++) {
 							libsarf_stat_file* s_file = stat_files[i];
-							if (s_file == NULL) continue;
-
+							printf("libtest: %p\n", &s_file);
 							printf("%s\t%hd\n", s_file->filename, s_file->size);
 						}
 					}
 				}
 				else {
-					printf("Error: not enough options\nGet help with `%s --help`", argv[0]);
+					printf("Error: not enough options\nGet help with `%s --help`\n", argv[0]);
 					return 1;
 				}
 			}
