@@ -5,20 +5,26 @@
 
 typedef struct {
 	char* filename;
+	FILE* file;
+	struct stat* stat;
 	int error;
 } libsarf_archive;
 
 typedef struct {
 	char* filename;
-	int16_t size;
-	int16_t mod_time;
+	uint16_t mode;
+	uint16_t uid;
+	uint16_t gid;
+	int64_t size;
+	long mod_time;
 } libsarf_stat_file;
 
 int libsarf_open_archive(libsarf_archive* archive, const char* filename);
+int libsarf_close_archive(libsarf_archive* archive);
 
 int libsarf_add_file_to_archive(libsarf_archive* archive, const char* target);
 int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* target, const char* dest);
 
-libsarf_stat_file** libsarf_stat_files_from_archive(libsarf_archive* archive, int* file_count);
+int libsarf_stat_files_from_archive(libsarf_archive* archive, libsarf_stat_file*** stat_files, int* file_count);
 
 #endif

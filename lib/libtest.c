@@ -33,7 +33,7 @@ int main(int argc, const char *argv[]) {
 
 		int sarf_res;
 		sarf_res = libsarf_open_archive(archive, archive_file);
-		if (sarf_res != 0) {
+		if (sarf_res != LSARF_OK) {
 			printf("Error: %s\n", libsarf_err2str(sarf_res));
 			return sarf_res;
 		}
@@ -46,7 +46,7 @@ int main(int argc, const char *argv[]) {
 					strcpy(target_file, argv[3]);
 
 					sarf_res = libsarf_add_file_to_archive(archive, target_file);
-					if (sarf_res != 0) {
+					if (sarf_res != LSARF_OK) {
 						printf("Error: %s\n", libsarf_err2str(sarf_res));
 						return sarf_res;
 					}
@@ -71,7 +71,7 @@ int main(int argc, const char *argv[]) {
 					}
 
 					sarf_res = libsarf_extract_file_from_archive(archive, target_file, target_dest);
-					if (sarf_res != 0) {
+					if (sarf_res != LSARF_OK) {
 						printf("Error: %s\n", libsarf_err2str(sarf_res));
 						return sarf_res;
 					}
@@ -86,16 +86,25 @@ int main(int argc, const char *argv[]) {
 				if (argc > 3) {
 					if (strcmp(argv[3], "-all") == 0) {
 						int file_count = 0;
-						libsarf_stat_file** stat_files = libsarf_stat_files_from_archive(archive, &file_count);
-						if (stat_files == NULL) {
+						libsarf_stat_file** stat_files = malloc(sizeof(libsarf_stat_file **) * 10);
+						sarf_res = libsarf_stat_files_from_archive(archive, &stat_files, &file_count);
+						if (sarf_res != LSARF_OK) {
 							printf("Error: %s\n", libsarf_err2str(archive->error));
 							return 1;
 						}
 
 						for (int i = 0; i < file_count; i++) {
 							libsarf_stat_file* s_file = stat_files[i];
-							printf("libtest: %p\n", &s_file);
-							printf("%s\t%hd\n", s_file->filename, s_file->size);
+
+							char *file_size_str = malloc(sizeof(char) * 12);
+							libsarf_format_file_size(file_size_str, s_file->size);
+
+							char *file_mod_time_str = malloc(sizeof(char) * 12);
+							libsarf_format_epoch(file_mod_time_str, s_file->mod_time);
+
+							printf("%08hu\t%08u\t%08u\t%s\t%s\t%s\n",
+								s_file->mode, s_file->uid, s_file->gid, file_size_str,
+								file_mod_time_str, s_file->filename);
 						}
 					}
 				}
@@ -105,6 +114,8 @@ int main(int argc, const char *argv[]) {
 				}
 			}
 		}
+
+		libsarf_close_archive(archive);
 	}
 
 	return 0;

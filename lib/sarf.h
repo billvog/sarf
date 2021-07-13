@@ -15,6 +15,7 @@
 
 #include "archive.h"
 #include "errors.h"
+#include "utils.h"
 #include "limits.h"
 
 #endif
