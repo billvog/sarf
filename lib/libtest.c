@@ -81,20 +81,36 @@ int main(int argc, const char *argv[]) {
 					return 1;
 				}
 			}
-			// sarf me.sarf -stat -all
+			// stat files from archive
 			else if (strcmp(argv[2], "-stat") == 0) {
 				if (argc > 3) {
 					if (strcmp(argv[3], "-all") == 0) {
 						int file_count = 0;
-						libsarf_stat_file** stat_files = malloc(sizeof(libsarf_stat_file **) * 10);
-						sarf_res = libsarf_stat_files_from_archive(archive, &stat_files, &file_count);
+						sarf_res = libsarf_count_files_in_archive(archive, &file_count);
 						if (sarf_res != LSARF_OK) {
 							printf("Error: %s\n", libsarf_err2str(archive->error));
 							return 1;
 						}
 
+						libsarf_stat_file** stat_files = malloc(sizeof(libsarf_stat_file **) * file_count);
+						sarf_res = libsarf_stat_files_from_archive(archive, &stat_files);
+						if (sarf_res != LSARF_OK) {
+							printf("Error: %s\n", libsarf_err2str(archive->error));
+							return 1;
+						}
+
+						printf("Found %d file(s) in archive:\n", file_count);
 						for (int i = 0; i < file_count; i++) {
 							libsarf_stat_file* s_file = stat_files[i];
+
+							char *mode_str = malloc(sizeof(char) * 10);
+							libsarf_format_mode(mode_str, s_file->mode);							
+
+							char *uid_str = malloc(sizeof(char) * 128);
+							libsarf_format_uid(uid_str, s_file->uid);
+
+							char *gid_str = malloc(sizeof(char) * 128);
+							libsarf_format_gid(gid_str, s_file->gid);
 
 							char *file_size_str = malloc(sizeof(char) * 12);
 							libsarf_format_file_size(file_size_str, s_file->size);
@@ -102,8 +118,8 @@ int main(int argc, const char *argv[]) {
 							char *file_mod_time_str = malloc(sizeof(char) * 12);
 							libsarf_format_epoch(file_mod_time_str, s_file->mod_time);
 
-							printf("%08hu\t%08u\t%08u\t%s\t%s\t%s\n",
-								s_file->mode, s_file->uid, s_file->gid, file_size_str,
+							printf("%s\t%s\t%s\t%s\t%s\t%s\n",
+								mode_str, uid_str, gid_str, file_size_str,
 								file_mod_time_str, s_file->filename);
 						}
 					}

@@ -21,6 +21,19 @@ char* libsarf_err2str(int err) {
 }
 
 // utils
+void libsarf_format_mode(char *str, uint16_t mode) {
+	str[0] = (mode & S_IRUSR) ? 'r' : '-';
+    str[1] = (mode & S_IWUSR) ? 'w' : '-';
+    str[2] = (mode & S_IXUSR) ? 'x' : '-';
+    str[3] = (mode & S_IRGRP) ? 'r' : '-';
+    str[4] = (mode & S_IWGRP) ? 'w' : '-';
+    str[5] = (mode & S_IXGRP) ? 'x' : '-';
+    str[6] = (mode & S_IROTH) ? 'r' : '-';
+    str[7] = (mode & S_IWOTH) ? 'w' : '-';
+    str[8] = (mode & S_IXOTH) ? 'x' : '-';
+    str[9] = '\0';
+}
+
 void libsarf_format_file_size(char *str, int64_t size) {
 	if (size >= 1000000000) {
 		sprintf(str, "%lldG", size / 1000000000);
@@ -36,6 +49,16 @@ void libsarf_format_file_size(char *str, int64_t size) {
 void libsarf_format_epoch(char *str, long timestamp) {
 	strcpy(str, asctime(localtime(&timestamp)));
 	strtok(str, "\n");
+}
+
+void libsarf_format_uid(char *str, uint16_t uid) {
+	struct passwd *pws = getpwuid(uid);
+	strcpy(str, pws->pw_name);
+}
+
+void libsarf_format_gid(char *str, uint16_t gid) {
+	struct group *grp = getgrgid(gid);
+	strcpy(str, grp->gr_name);
 }
 
 // archive
@@ -143,8 +166,28 @@ int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* targ
 	return LSARF_OK;
 }
 
-int libsarf_stat_files_from_archive(libsarf_archive* archive, libsarf_stat_file*** stat_files, int* file_count) {
-  	*file_count = 0;
+int libsarf_count_files_in_archive(libsarf_archive* archive, int* file_count) {
+	*file_count = 0;
+
+  	fseek(archive->file, 0, SEEK_SET);
+	while (ftell(archive->file) < archive->stat->st_size) {
+		(*file_count)++;
+
+		fseek(archive->file, LSARF_FILENAME_MAX + 8 + 8 + 8, SEEK_CUR);
+
+		// file size
+		char *file_size_str = malloc(sizeof(char) * 12);
+		fread(file_size_str, 1, 12, archive->file);
+		int64_t file_size = atoi(file_size_str);
+
+		fseek(archive->file, 12 + file_size, SEEK_CUR);
+	}
+
+	return LSARF_OK;
+}
+
+int libsarf_stat_files_from_archive(libsarf_archive* archive, libsarf_stat_file*** stat_files) {
+  	int file_count = 0;
 
   	fseek(archive->file, 0, SEEK_SET);
 	while (ftell(archive->file) < archive->stat->st_size) {
@@ -195,8 +238,8 @@ int libsarf_stat_files_from_archive(libsarf_archive* archive, libsarf_stat_file*
 		stat->size = file_size;
 		stat->mod_time = file_mtime;
 
-		(*stat_files)[*file_count] = stat;
-		(*file_count)++;
+		(*stat_files)[file_count] = stat;
+		file_count++;
 	}
 
 	return LSARF_OK;
