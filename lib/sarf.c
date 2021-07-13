@@ -119,24 +119,27 @@ int libsarf_add_file_to_archive(libsarf_archive* archive, const char* target) {
 
 int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* target, const char* dest) {
   	int file_found = -1;
+
+  	fseek(archive->file, 0, SEEK_SET);
 	while (ftell(archive->file) < archive->stat->st_size) {
 		char *file_name = malloc(sizeof(char) * LSARF_FILENAME_MAX);
 		fread(file_name, 1, LSARF_FILENAME_MAX, archive->file);
-
-		// skip stuff we don't want
-		fseek(archive->file, 8 + 8 + 8, SEEK_CUR);
 
 		// clear filename from whitespaces
 		char* fn_back = file_name + strlen(file_name);
 	    while (isspace(*--fn_back));
 	    *(fn_back+1) = '\0';
 
+	    // skip stuff we don't want
+		fseek(archive->file, 8 + 8 + 8, SEEK_CUR);
+
 		char *file_size_str = malloc(sizeof(char) * 12);
 		fread(file_size_str, 1, 12, archive->file);
 		int file_size = atoi(file_size_str);
 
+		printf("file: %s\n", file_name);
 		if (strcmp(file_name, target) != 0) {
-			fseek(archive->file, 12 + 32 + file_size + 32, SEEK_CUR);
+			fseek(archive->file, 12 + file_size, SEEK_CUR);
 			continue;
 		}
 

@@ -10,13 +10,17 @@ int print_help() {
 	printf("--help\t\t\tDisplay this help and exit\n");
 	printf("--version\t\tDisplay version information and exit\n");
 	printf("\n");
-	printf("Switches\n\n");
-	printf("-add [file] [destination in archive]?\n");
-	printf("-remove [file from archive]\n");
-	printf("-stat [-all]? [file in archive]?\n");
-	printf("-extract [-all]? [file] [output]?\n");
-	printf("-cat [file in archive]\n");
-	printf("\n");
+	printf("Switches:\n");
+	printf("    -add [file] [destination]\n");
+	printf("        Adds file to archive in desired destination if given\n\n");
+	printf("    -remove [file]\n");
+	printf("        Removes files from archive if exists\n\n");
+	printf("    -stat [-all] [file]\n");
+	printf("        Stats either all or a specific file from archive\n\n");
+	printf("    -extract [-all] [file] [output]\n");
+	printf("        Exports either all or a specific file from archive in the desired ouptup path\n\n");
+	printf("    -cat [file]\n");
+	printf("        Prints the contents of a file from archive\n\n");
 	printf("Find open-source @ https://github.com/billvog/sar-format\n");
 	return 0;
 }
