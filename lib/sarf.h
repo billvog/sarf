@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <fcntl.h>
+#include <libgen.h>
 
 #include "archive.h"
 #include "errors.h"

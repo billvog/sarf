@@ -131,7 +131,9 @@ int libsarf_add_file_to_archive(libsarf_archive* archive, const char* target) {
 
 	char c;
 	uint16_t read = 0;
-	while ((c = fgetc(target_file)) != EOF) {
+	while (1) {
+		c = fgetc(target_file);
+		if (ftell(target_file) > target_stat.st_size) break;
 		fputc(c, archive->file);
 		if (++read >= target_stat.st_size)
 			break;
@@ -170,7 +172,7 @@ int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* targ
 
 		char *file_size_str = malloc(sizeof(char) * 12);
 		fread(file_size_str, 1, 12, archive->file);
-		int file_size = atoi(file_size_str);
+		int64_t file_size = atoi(file_size_str);
 
 		fseek(archive->file, 12, SEEK_CUR);
 
@@ -185,6 +187,10 @@ int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* targ
 		if (extract_all == 0) {
 			char *output_filename = malloc(sizeof(char) * strlen(output) + strlen(file_name) + 1);
 			sprintf(output_filename, "%s/%s", output, file_name);
+
+			mkdir(dirname(output_filename),
+				  S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
 			output_fd = open(output_filename, O_WRONLY | O_CREAT, file_mode);
 		}
 		else {
@@ -192,7 +198,7 @@ int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* targ
 		}
 
 		FILE* output_file;
-		output_file = fdopen(output_fd, "w");
+		output_file = fdopen(output_fd, "wb");
 
 		if (output_file == NULL) {
 			return LSARF_ERR_O_CANNOT_CREATE;
@@ -200,7 +206,9 @@ int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* targ
 
 		char c;
 		uint16_t read = 0;
-		while ((c = fgetc(archive->file)) != EOF) {
+		while (1) {
+			c = fgetc(archive->file);
+			if (ftell(archive->file) > archive->stat->st_size) break;
 			fputc(c, output_file);
 			if (++read >= file_size)
 				break;
@@ -208,7 +216,8 @@ int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* targ
 
 		fclose(output_file);
 
-		break;
+		if (extract_all != 0)
+			break;
 	}
 
 	if (file_found == -1)
@@ -357,7 +366,9 @@ int libsarf_remove_file_from_archive(libsarf_archive* archive, const char* targe
 
 		char c;
 		uint16_t read = 0;
-		while ((c = fgetc(archive->file)) != EOF) {
+		while (1) {
+			c = fgetc(archive->file);
+			if (ftell(archive->file) > archive->stat->st_size) break;
 			fputc(c, temp_ar);
 			if (++read >= file_size)
 				break;
