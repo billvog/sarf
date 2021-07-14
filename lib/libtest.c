@@ -5,20 +5,22 @@
 #include "sarf.h"
 
 int print_help() {
-	printf("sarf, a simple archive format for unix\n\n");
-	printf("Usage: sarf [ARCHIVE] [SWITCHES...]\n\n");
-	printf("--help\t\t\tDisplay this help and exit\n");
-	printf("--version\t\tDisplay version information and exit\n");
+	printf("sarf, a simple archive format for unix.\n\n");
+	printf("usage: sarf [--help] [--version]\n");
+	printf("            [archive] [switches...]\n\n");
+	printf("Options:\n");
+	printf("    --help\tDisplay this help and exit\n");
+	printf("    --version\tDisplay version information and exit\n");
 	printf("\n");
 	printf("Switches:\n");
-	printf("    -add [file] [destination]\n");
+	printf("    -add [files...] -d [destination]\n");
 	printf("        Adds file to archive in desired destination if given\n\n");
-	printf("    -rm [files]\n");
+	printf("    -rm [files...]\n");
 	printf("        Removes files from archive\n\n");
 	printf("    -stat\n");
 	printf("        Stats files from archive\n\n");
-	printf("    -extract [-all] [file] [-o] [output]\n");
-	printf("        Exports either all or a specific file from archive in the desired ouptup path\n\n");
+	printf("    -extract [-all] [files...] [-o] [output]\n");
+	printf("        Extracts either all or specific files from archive in the desired output path\n\n");
 	printf("Find open-source @ https://github.com/billvog/sar-format\n");
 	return 0;
 }
@@ -26,6 +28,14 @@ int print_help() {
 int main(int argc, const char *argv[]) {
 	if (argc == 1 || (argc == 2 && strcmp(argv[1], "--help") == 0)) {
 		return print_help();
+	}
+	else if (strcmp(argv[1], "--version") == 0) {
+		printf("sarf version %s (%s)\n", LSARF_VERSION, LSARF_BUILT_OS);
+		return 0;
+	}
+	else if (argv[1][0] == '-') {
+		printf("error: invalid option -- %s\n", argv[1]);
+		return 1;
 	}
 	else {
 		if (libsarf_init() != 0) {
@@ -63,7 +73,7 @@ int main(int argc, const char *argv[]) {
 					}
 				}
 				else {
-					printf("error: not enough options\nGet help with `%s --help`\n", argv[0]);
+					printf("error: not enough options\n");
 					return 1;
 				}
 			}
@@ -95,7 +105,7 @@ int main(int argc, const char *argv[]) {
 
 						sarf_res = libsarf_extract_all_from_archive(archive, target_dest);
 						if (sarf_res != LSARF_OK) {
-							printf("Error: %s\n", libsarf_err2str(sarf_res));
+							printf("error: %s\n", libsarf_err2str(sarf_res));
 							return sarf_res;
 						}
 
@@ -133,7 +143,7 @@ int main(int argc, const char *argv[]) {
 					}
 				}
 				else {
-					printf("error: not enough options\nGet help with `%s --help`\n", argv[0]);
+					printf("error: not enough options\n");
 					return 1;
 				}
 			}
@@ -150,11 +160,11 @@ int main(int argc, const char *argv[]) {
 							continue;
 						}
 
-						printf("rm %s\n", target_file);
+						printf("r %s\n", target_file);
 					}
 				}
 				else {
-					printf("error: not enough options\nGet help with `%s --help`\n", argv[0]);
+					printf("error: not enough options\n");
 					return 1;
 				}
 			}

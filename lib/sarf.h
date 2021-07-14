@@ -16,6 +16,8 @@
 #include <fcntl.h>
 #include <libgen.h>
 
+#define LSARF_VERSION "0.0.1"
+
 #include "archive.h"
 #include "errors.h"
 #include "utils.h"
