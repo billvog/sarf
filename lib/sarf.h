@@ -20,4 +20,6 @@
 #include "utils.h"
 #include "sarf_limits.h"
 
+int libsarf_init();
+
 #endif

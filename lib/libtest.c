@@ -28,6 +28,11 @@ int main(int argc, const char *argv[]) {
 		return print_help();
 	}
 	else {
+		if (libsarf_init() != 0) {
+			printf("error: unknown error during initialization\n");
+			exit(1);
+		}
+
 		char* archive_file = malloc(sizeof(char) * 64);
 		strcpy(archive_file, argv[1]);
 
@@ -44,16 +49,18 @@ int main(int argc, const char *argv[]) {
 			// add file to archive
 			if (strcmp(argv[2], "-add") == 0) {
 				if (argc > 3) {
-					char* target_file = malloc(sizeof(char) * 64);
-					strcpy(target_file, argv[3]);
+					for (int i = 3; i < argc; ++i) {
+						char *target_file = malloc(sizeof(char) * 100);
+						strcpy(target_file, argv[i]);
 
-					sarf_res = libsarf_add_file_to_archive(archive, target_file);
-					if (sarf_res != LSARF_OK) {
-						printf("error: %s\n", libsarf_err2str(sarf_res));
-						return sarf_res;
+						sarf_res = libsarf_add_file_to_archive(archive, target_file);
+						if (sarf_res != LSARF_OK) {
+							printf("error: %s: %s\n", target_file, libsarf_err2str(sarf_res));
+							continue;
+						}
+
+						printf("a %s\n", target_file);
 					}
-
-					printf("a %s\n", target_file);
 				}
 				else {
 					printf("error: not enough options\nGet help with `%s --help`\n", argv[0]);
@@ -118,11 +125,11 @@ int main(int argc, const char *argv[]) {
 
 						sarf_res = libsarf_extract_file_from_archive(archive, target_file, target_dest);
 						if (sarf_res != LSARF_OK) {
-							printf("Error: %s\n", libsarf_err2str(sarf_res));
+							printf("error: %s\n", libsarf_err2str(sarf_res));
 							return sarf_res;
 						}
 
-						printf("e %s\n", target_file);
+						printf("e %s\n", target_dest);
 					}
 				}
 				else {
@@ -133,16 +140,18 @@ int main(int argc, const char *argv[]) {
 			// remove file from archive
 			else if (strcmp(argv[2], "-rm") == 0) {
 				if (argc > 3) {
-					char* target_file = malloc(sizeof(char) * 64);
-					strcpy(target_file, argv[3]);
+					for (int i = 3; i < argc; ++i) {
+						char* target_file = malloc(sizeof(char) * 100);
+						strcpy(target_file, argv[i]);
 
-					sarf_res = libsarf_remove_file_from_archive(archive, target_file);
-					if (sarf_res != LSARF_OK) {
-						printf("Error: %s\n", libsarf_err2str(sarf_res));
-						return sarf_res;
+						sarf_res = libsarf_remove_file_from_archive(archive, target_file);
+						if (sarf_res != LSARF_OK) {
+							printf("error: %s: %s\n", target_file, libsarf_err2str(sarf_res));
+							continue;
+						}
+
+						printf("rm %s\n", target_file);
 					}
-
-					printf("rm %s\n", target_file);
 				}
 				else {
 					printf("error: not enough options\nGet help with `%s --help`\n", argv[0]);
