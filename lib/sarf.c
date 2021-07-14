@@ -144,8 +144,13 @@ int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* targ
 	    while (isspace(*--fn_back));
 	    *(fn_back+1) = '\0';
 
+	    // file mode
+	    char *file_mode_str = malloc(sizeof(char) * 8);
+		fread(file_mode_str, 1, 8, archive->file);
+		uint16_t file_mode = atoi(file_mode_str);
+
 	    // skip stuff we don't want
-		fseek(archive->file, 8 + 8 + 8, SEEK_CUR);
+		fseek(archive->file, 8 + 8, SEEK_CUR);
 
 		char *file_size_str = malloc(sizeof(char) * 12);
 		fread(file_size_str, 1, 12, archive->file);
@@ -163,7 +168,10 @@ int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* targ
 		char *file_buffer = malloc(sizeof(char) * (file_size + 1));
 		fread(file_buffer, sizeof(char), file_size, archive->file);
 
-		FILE* output_file = fopen(output, "w");
+		FILE* output_file;
+		int output_fd = open(output, O_WRONLY | O_CREAT, file_mode);
+		output_file = fdopen(output_fd, "w");
+
 		if (output_file == NULL) {
 			return LSARF_ERR_O_CANNOT_CREATE;
 		}

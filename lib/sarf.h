@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <fcntl.h>
 
 #include "archive.h"
 #include "errors.h"
