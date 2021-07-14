@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -17,6 +18,6 @@
 #include "archive.h"
 #include "errors.h"
 #include "utils.h"
-#include "limits.h"
+#include "sarf_limits.h"
 
 #endif
