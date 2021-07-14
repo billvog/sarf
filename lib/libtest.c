@@ -13,14 +13,12 @@ int print_help() {
 	printf("Switches:\n");
 	printf("    -add [file] [destination]\n");
 	printf("        Adds file to archive in desired destination if given\n\n");
-	printf("    -remove [file]\n");
-	printf("        Removes files from archive if exists\n\n");
+	printf("    -rm [files]\n");
+	printf("        Removes files from archive\n\n");
 	printf("    -stat [-all] [file]\n");
 	printf("        Stats either all or a specific file from archive\n\n");
-	printf("    -extract [-all] [file] [output]\n");
+	printf("    -extract [-all] [file] [-o] [output]\n");
 	printf("        Exports either all or a specific file from archive in the desired ouptup path\n\n");
-	printf("    -cat [file]\n");
-	printf("        Prints the contents of a file from archive\n\n");
 	printf("Find open-source @ https://github.com/billvog/sar-format\n");
 	return 0;
 }
@@ -38,7 +36,7 @@ int main(int argc, const char *argv[]) {
 		int sarf_res;
 		sarf_res = libsarf_open_archive(archive, archive_file);
 		if (sarf_res != LSARF_OK) {
-			printf("Error: %s\n", libsarf_err2str(sarf_res));
+			printf("error: %s\n", libsarf_err2str(sarf_res));
 			return sarf_res;
 		}
 
@@ -51,24 +49,34 @@ int main(int argc, const char *argv[]) {
 
 					sarf_res = libsarf_add_file_to_archive(archive, target_file);
 					if (sarf_res != LSARF_OK) {
-						printf("Error: %s\n", libsarf_err2str(sarf_res));
+						printf("error: %s\n", libsarf_err2str(sarf_res));
 						return sarf_res;
 					}
 				}
 				else {
-					printf("Error: not enough options\nGet help with `%s --help`\n", argv[0]);
+					printf("error: not enough options\nGet help with `%s --help`\n", argv[0]);
 					return 1;
 				}
 			}
 			// extract file from archive
 			else if (strcmp(argv[2], "-extract") == 0) {
 				if (argc > 3) {
-					char* target_file = malloc(sizeof(char) * 64);
+					char* target_file = malloc(sizeof(char) * 100);
+					char* target_dest = malloc(sizeof(char) * 100);
+
 					strcpy(target_file, argv[3]);
 
-					char* target_dest = malloc(sizeof(char) * 64);
 					if (argc > 4) {
-						strcpy(target_dest, argv[4]);
+						if (strcmp(argv[4], "-o") == 0) {
+							if (argc > 5) {
+								strcpy(target_dest, argv[5]);
+							}
+							else {
+								printf("error: please specify an output\n");
+								libsarf_close_archive(archive);
+								exit(1);
+							}
+						}
 					}
 					else {
 						strcpy(target_dest, target_file);
@@ -81,7 +89,24 @@ int main(int argc, const char *argv[]) {
 					}
 				}
 				else {
-					printf("Error: not enough options\nGet help with `%s --help`\n", argv[0]);
+					printf("error: not enough options\nGet help with `%s --help`\n", argv[0]);
+					return 1;
+				}
+			}
+			// remove file from archive
+			else if (strcmp(argv[2], "-rm") == 0) {
+				if (argc > 3) {
+					char* target_file = malloc(sizeof(char) * 64);
+					strcpy(target_file, argv[3]);
+
+					sarf_res = libsarf_remove_file_from_archive(archive, target_file);
+					if (sarf_res != LSARF_OK) {
+						printf("Error: %s\n", libsarf_err2str(sarf_res));
+						return sarf_res;
+					}
+				}
+				else {
+					printf("error: not enough options\nGet help with `%s --help`\n", argv[0]);
 					return 1;
 				}
 			}
@@ -92,14 +117,14 @@ int main(int argc, const char *argv[]) {
 						int file_count = 0;
 						sarf_res = libsarf_count_files_in_archive(archive, &file_count);
 						if (sarf_res != LSARF_OK) {
-							printf("Error: %s\n", libsarf_err2str(archive->error));
+							printf("error: %s\n", libsarf_err2str(archive->error));
 							return 1;
 						}
 
 						libsarf_stat_file** stat_files = malloc(sizeof(libsarf_stat_file **) * file_count);
 						sarf_res = libsarf_stat_files_from_archive(archive, &stat_files);
 						if (sarf_res != LSARF_OK) {
-							printf("Error: %s\n", libsarf_err2str(archive->error));
+							printf("error: %s\n", libsarf_err2str(archive->error));
 							return 1;
 						}
 
@@ -129,7 +154,7 @@ int main(int argc, const char *argv[]) {
 					}
 				}
 				else {
-					printf("Error: not enough options\nGet help with `%s --help`\n", argv[0]);
+					printf("error: not enough options\nGet help with `%s --help`\n", argv[0]);
 					return 1;
 				}
 			}
