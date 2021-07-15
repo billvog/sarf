@@ -108,7 +108,7 @@ int libsarf_close_archive(libsarf_archive* archive) {
 	return LSARF_OK;
 }
 
-int libsarf_add_file_to_archive(libsarf_archive* archive, const char* target) {
+int libsarf_add_file_to_archive(libsarf_archive* archive, const char* target, const char* destination) {
 	struct stat target_stat;
 	stat(target, &target_stat);
 
@@ -116,18 +116,31 @@ int libsarf_add_file_to_archive(libsarf_archive* archive, const char* target) {
 		return LSARF_ERR_NOT_REG_FILE;
 	}
 
-	FILE* target_file = fopen(target, "rb");
-	if (target_file == NULL) {
-		return LSARF_ERR_T_CANNOT_OPEN;
+	char* final_dest = malloc(sizeof(char) * 100);
+	if (destination == NULL || strlen(destination) <= 0) {
+		strcpy(final_dest, target);
+	}
+	else {
+		if (destination[strlen(destination) - 1] == '/') {
+			sprintf(final_dest, "%s%s", destination, target);
+		}
+		else {
+			strcpy(final_dest, destination);
+		}
 	}
 
 	// Write data to archive
-	fprintf(archive->file, "%-100s", target);
+	fprintf(archive->file, "%-100s", final_dest);
 	fprintf(archive->file, "%08hu", target_stat.st_mode);
 	fprintf(archive->file, "%08u", target_stat.st_uid);
 	fprintf(archive->file, "%08u", target_stat.st_gid);
 	fprintf(archive->file, "%012lld", target_stat.st_size);
 	fprintf(archive->file, "%012ld", target_stat.st_mtimespec.tv_sec);
+
+	FILE* target_file = fopen(target, "rb");
+	if (target_file == NULL) {
+		return LSARF_ERR_T_CANNOT_OPEN;
+	}
 
 	char c;
 	uint16_t read = 0;

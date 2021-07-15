@@ -17,10 +17,10 @@ int print_help() {
 	printf("        Adds file to archive in desired destination if given\n\n");
 	printf("    -rm [files...]\n");
 	printf("        Removes files from archive\n\n");
-	printf("    -stat\n");
-	printf("        Stats files from archive\n\n");
+	printf("    -stat Stats files from archive\n\n");
 	printf("    -extract [-all] [files...] [-o] [output]\n");
-	printf("        Extracts either all or specific files from archive in the desired output path\n\n");
+	printf("        Extracts either all or specific files from\n");
+	printf("        archive in the desired output path\n\n");
 	printf("Find open-source @ https://github.com/billvog/sar-format\n");
 	return 0;
 }
@@ -59,11 +59,32 @@ int main(int argc, const char *argv[]) {
 			// add file to archive
 			if (strcmp(argv[2], "-add") == 0) {
 				if (argc > 3) {
+					// find destintation if given
+					char *target_dest = malloc(sizeof(char) * 100);
 					for (int i = 3; i < argc; ++i) {
+						if (strcmp(argv[i], "-d") == 0) {
+							if (argc > i+1) {
+								strcpy(target_dest, argv[++i]);
+								break;
+							}
+							else {
+								printf("error: please specify an output\n");
+								libsarf_close_archive(archive);
+								exit(1);
+							}
+						}
+					}
+
+					for (int i = 3; i < argc; ++i) {
+						if (strcmp(argv[i], "-d") == 0) {
+							i++;
+							continue;
+						}
+
 						char *target_file = malloc(sizeof(char) * 100);
 						strcpy(target_file, argv[i]);
 
-						sarf_res = libsarf_add_file_to_archive(archive, target_file);
+						sarf_res = libsarf_add_file_to_archive(archive, target_file, target_dest);
 						if (sarf_res != LSARF_OK) {
 							printf("error: %s: %s\n", target_file, libsarf_err2str(sarf_res));
 							continue;
