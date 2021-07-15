@@ -15,13 +15,15 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <libgen.h>
-
-#define LSARF_VERSION "0.0.1"
+#include <dirent.h>
 
 #include "archive.h"
 #include "errors.h"
 #include "utils.h"
 #include "sarf_limits.h"
+#include "flags.h"
+
+#define LSARF_VERSION "0.0.1"
 
 int libsarf_init();
 

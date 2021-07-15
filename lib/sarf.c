@@ -23,6 +23,9 @@ char* libsarf_err2str(int err) {
 		case LSARF_ERR_TMP_CANNOT_CREATE:
 			strcpy(error_str, "couldn't create temp file");
 			break;
+		case LSARF_ERR_D_INVALID:
+			strcpy(error_str, "invalid destination path given");
+			break;
 		case LSARF_OK:
 			strcpy(error_str, "");
 			break;
@@ -157,6 +160,43 @@ int libsarf_add_file_to_archive(libsarf_archive* archive, const char* target, co
 	return LSARF_OK;
 }
 
+int libsarf_add_dir_to_archive(libsarf_archive* archive, const char* target_dir, const char* destination, sarf_flags_t flags) {
+	if (destination != NULL && strlen(destination) > 0) {
+		struct stat dest_stat;
+		stat(destination, &dest_stat);
+		if (!S_ISDIR(dest_stat.st_mode) && destination[strlen(destination)-1] != '/') {
+			return LSARF_ERR_D_INVALID;
+		}
+	}
+
+	DIR *dir = opendir(target_dir);
+	if (dir != NULL) {
+		struct dirent *ent;
+		while ((ent = readdir(dir)) != NULL) {
+			if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+				continue;
+
+			char* entpath = malloc(sizeof(char) * (strlen(target_dir) + strlen(ent->d_name) + 1));
+			sprintf(entpath, "%s/%s", target_dir, ent->d_name);
+
+			struct stat path_stat;
+  			stat(entpath, &path_stat);
+
+			if (S_ISDIR(path_stat.st_mode)) {
+				if (flags & LSARF_AR_ADD_DIR_RECURS) {
+					libsarf_add_dir_to_archive(archive, entpath, destination, LSARF_AR_ADD_DIR_RECURS);
+				}
+			} else {
+				libsarf_add_file_to_archive(archive, entpath, destination);
+			}
+		}
+
+		closedir(dir);
+	}
+
+	return LSARF_OK;
+}
+
 int libsarf_extract_all_from_archive(libsarf_archive* archive, const char* output) {
 	return libsarf_extract_file_from_archive(archive, NULL, output);
 }
@@ -195,22 +235,33 @@ int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* targ
 		}
 
 		file_found = 0;
-		
-		int output_fd = 0;
+
+		char *final_output = malloc(sizeof(char) * strlen(output) + strlen(file_name) + 1);
+
 		if (extract_all == 0) {
-			char *output_filename = malloc(sizeof(char) * strlen(output) + strlen(file_name) + 1);
-			sprintf(output_filename, "%s/%s", output, file_name);
-
-			mkdir(dirname(output_filename),
-				  S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-
-			output_fd = open(output_filename, O_WRONLY | O_CREAT, file_mode);
+			sprintf(final_output, "%s/%s", output, file_name);
 		}
 		else {
-			output_fd = open(output, O_WRONLY | O_CREAT, file_mode);
+			strcpy(final_output, output);
 		}
 
+		char* parent_dirs = dirname(final_output);
+		char* current_dir_state = malloc(sizeof(char) * strlen(parent_dirs));
+		char* dir_token = strtok(parent_dirs, "/");
+		strcpy(current_dir_state, dir_token);
+
+		while (dir_token != NULL) {
+			mkdir(current_dir_state, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+      		dir_token = strtok(NULL, "/");
+			sprintf(current_dir_state, "%s/%s", current_dir_state, dir_token);
+		}
+
+		free(parent_dirs);
+		free(current_dir_state);
+		free(dir_token);
+
 		FILE* output_file;
+		int output_fd = open(final_output, O_WRONLY | O_CREAT, file_mode);
 		output_file = fdopen(output_fd, "wb");
 
 		if (output_file == NULL) {

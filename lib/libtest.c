@@ -84,7 +84,14 @@ int main(int argc, const char *argv[]) {
 						char *target_file = malloc(sizeof(char) * 100);
 						strcpy(target_file, argv[i]);
 
-						sarf_res = libsarf_add_file_to_archive(archive, target_file, target_dest);
+						struct stat target_stat;
+  						stat(target_file, &target_stat);
+  						if (S_ISDIR(target_stat.st_mode))
+  							sarf_res = libsarf_add_dir_to_archive(archive, target_file, target_dest, LSARF_AR_ADD_DIR_RECURS);
+  						else
+  							sarf_res = libsarf_add_file_to_archive(archive, target_file, target_dest);
+
+						
 						if (sarf_res != LSARF_OK) {
 							printf("error: %s: %s\n", target_file, libsarf_err2str(sarf_res));
 							continue;

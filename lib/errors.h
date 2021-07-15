@@ -11,6 +11,7 @@
 #define LSARF_ERR_O_CANNOT_CREATE	4
 #define LSARF_ERR_TiA_NOT_FOUND		5
 #define LSARF_ERR_TMP_CANNOT_CREATE	6
+#define LSARF_ERR_D_INVALID			7
 
 char* libsarf_err2str(int err);
 
