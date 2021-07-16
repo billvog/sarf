@@ -4,6 +4,10 @@
 #include "sarf.h"
 #include "flags.h"
 
+// limits
+#define LSARF_FILENAME_MAX 100
+
+// structs
 typedef struct {
 	char* filename;
 	FILE* file;
@@ -20,6 +24,7 @@ typedef struct {
 	long mod_time;
 } libsarf_file;
 
+// functions
 int libsarf_open_archive(libsarf_archive* archive, const char* filename);
 int libsarf_close_archive(libsarf_archive* archive);
 
