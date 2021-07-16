@@ -23,7 +23,7 @@
 #include "sarf_limits.h"
 #include "flags.h"
 
-#define LSARF_VERSION "0.0.1"
+#define LSARF_VERSION "0.0.12"
 
 int libsarf_init();
 

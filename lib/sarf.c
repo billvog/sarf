@@ -229,7 +229,10 @@ int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* targ
 
 		fseek(archive->file, 12, SEEK_CUR);
 
-		if (extract_all != 0 && strcmp(file_name, target) != 0) {
+		if (extract_all != 0 && 
+			(strcmp(file_name, target) != 0 && 
+			(target[strlen(target)-1] == '/' && strncmp(file_name, target, strlen(target)) != 0)))
+		{
 			fseek(archive->file, file_size, SEEK_CUR);
 			continue;
 		}
@@ -237,12 +240,19 @@ int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* targ
 		file_found = 0;
 
 		char *final_output = malloc(sizeof(char) * strlen(output) + strlen(file_name) + 1);
-
 		if (extract_all == 0) {
 			sprintf(final_output, "%s/%s", output, file_name);
 		}
 		else {
-			strcpy(final_output, output);
+			if (output == NULL || strlen(output) <= 0)
+				strcpy(final_output, file_name);
+			else {
+				if (output[strlen(output) - 1] == '/') {
+					sprintf(final_output, "%s/%s", output, file_name);
+				}
+				else
+					strcpy(final_output, output);
+			}
 		}
 
 		char* parent_dirs = dirname(final_output);
@@ -415,7 +425,9 @@ int libsarf_remove_file_from_archive(libsarf_archive* archive, const char* targe
 	    long file_mtime = atol(file_mtime_str);
 
 		// if this is the target exclude it from the new archive
-		if (strcmp(file_name, target) == 0) {
+		if (strcmp(file_name, target) == 0 || 
+			(target[strlen(target)-1] == '/' && strncmp(file_name, target, strlen(target)) == 0))
+		{
 			file_found = 0;
 			fseek(archive->file, file_size, SEEK_CUR);
 			continue;
