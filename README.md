@@ -1,13 +1,9 @@
-# sarf, simple archive format for unix
+# libsarf, simple archiving library for unix
 
-SARF, helps you manipulate archive files with the .sarf extension. The archives it creates only stores the files, meaning there is no compression applied.
+libsarf is simple dependency-free C library that helps you manipulate sarf archives.
 
----
+## What is SARF?
+See what is SARF [here](https://github.com/billvog/sarf/wiki/What-is-sarf%3F).
 
-### Only for UNIX
-Currently, SARF is only supported by unix based systems (MacOS, Linux). That's because it uses c libraries that are only available on unix.
-
----
-
-### Dependencies
-SARF's only dependency is the C language to be installed on your system.
+## Documention
+For documention please visit the [Wiki](https://github.com/billvog/sarf/wiki) page.
