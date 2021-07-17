@@ -248,7 +248,7 @@ int libsarf_extract_file_from_archive(libsarf_archive* archive, const char* targ
 				strcpy(final_output, file_name);
 			else {
 				if (output[strlen(output) - 1] == '/') {
-					sprintf(final_output, "%s/%s", output, file_name);
+					sprintf(final_output, "%s%s", output, file_name);
 				}
 				else
 					strcpy(final_output, output);
