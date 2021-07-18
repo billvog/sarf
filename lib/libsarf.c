@@ -265,10 +265,11 @@ int libsarf_extract_file_from_archive(libsarf_archive_t* archive, const char* ta
 		while (dir_token != NULL) {
 			mkdir(current_dir_state, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
       		dir_token = strtok(NULL, "/");
+      		if (dir_token == NULL) break;
+
 			sprintf(current_dir_state, "%s/%s", current_dir_state, dir_token);
 		}
 
-		free(parent_dirs);
 		free(current_dir_state);
 		free(dir_token);
 
@@ -280,10 +281,21 @@ int libsarf_extract_file_from_archive(libsarf_archive_t* archive, const char* ta
 			return LSARF_ERR_O_CANNOT_CREATE;
 		}
 
+		int64_t bytes_left = file_size;
 		char buffer[1024];
 		while (!feof(archive->file)) {
-			size_t bytes_read = fread(buffer, 1, 1024, archive->file);
+			size_t read_size = 1024;
+			if (bytes_left < 1024) {
+				read_size = bytes_left;
+			}
+
+			size_t bytes_read = fread(buffer, 1, read_size, archive->file);
+			bytes_left -= bytes_read;
+
 			fwrite(buffer, 1, bytes_read, output_file);
+
+			if (bytes_left <= 0)
+				break;
 		}
 
 		fclose(output_file);
@@ -438,10 +450,21 @@ int libsarf_remove_file_from_archive(libsarf_archive_t* archive, const char* tar
 		fprintf(temp_ar, "%012lld", file_size);
 		fprintf(temp_ar, "%012ld", file_mtime);
 
+		int64_t bytes_left = file_size;
 		char buffer[1024];
 		while (!feof(archive->file)) {
-			size_t bytes_read = fread(buffer, 1, 1024, archive->file);
+			size_t read_size = 1024;
+			if (bytes_left < 1024) {
+				read_size = bytes_left;
+			}
+
+			size_t bytes_read = fread(buffer, 1, read_size, archive->file);
+			bytes_left -= bytes_read;
+
 			fwrite(buffer, 1, bytes_read, temp_ar);
+
+			if (bytes_left <= 0)
+				break;
 		}
 	}
 
