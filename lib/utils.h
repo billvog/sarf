@@ -1,6 +1,7 @@
 #ifndef __SARF_UTILS__
 #define __SARF_UTILS__
 
+#include <inttypes.h>
 #include <time.h>
 #include <pwd.h>
 #include <grp.h>

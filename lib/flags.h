@@ -1,6 +1,8 @@
 #ifndef __SARF_FLAGS__
 #define __SARF_FLAGS__
 
+#include <inttypes.h>
+
 typedef uint32_t sarf_flags_t;
 
 /* archive flags */

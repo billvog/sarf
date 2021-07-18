@@ -1,11 +1,16 @@
+/*
+	This is a simple implemantation of libsarf, used to test
+	the library during development.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "sarf.h"
+#include "libsarf.h"
 
 int print_help() {
-	printf("sarf, a simple archive format for unix.\n");
+	printf("sarf, a simple archiving tool for unix.\n");
 	printf("find open-source @ https://github.com/billvog/sarf\n\n");
 	printf("usage: sarf [--help] [--version]\n");
 	printf("            [archive] [switches...]\n\n");
@@ -42,7 +47,7 @@ int main(int argc, const char *argv[]) {
 		char* archive_file = malloc(sizeof(char) * 64);
 		strcpy(archive_file, argv[1]);
 
-		libsarf_archive* archive = malloc(sizeof(libsarf_archive));
+		libsarf_archive_t* archive = malloc(sizeof(libsarf_archive_t));
 
 		int sarf_res;
 		sarf_res = libsarf_open_archive(archive, archive_file);
@@ -87,7 +92,6 @@ int main(int argc, const char *argv[]) {
   						else
   							sarf_res = libsarf_add_file_to_archive(archive, target_file, target_dest);
 
-						
 						if (sarf_res != LSARF_OK) {
 							printf("E: %s: %s\n", target_file, libsarf_err2str(sarf_res));
 							continue;
@@ -199,21 +203,21 @@ int main(int argc, const char *argv[]) {
 				}
 
 				if (file_count == 0) {
-					printf("There are no files in the archive\n");
+					printf("there are no files in the archive\n");
 					libsarf_close_archive(archive);
 					return 0;
 				}
 
-				libsarf_file** stat_files = malloc(sizeof(libsarf_file *) * file_count);
+				libsarf_file_t** stat_files = malloc(sizeof(libsarf_file_t *) * file_count);
 				sarf_res = libsarf_stat_files_from_archive(archive, &stat_files);
 				if (sarf_res != LSARF_OK) {
 					printf("E: %s\n", libsarf_err2str(archive->error));
 					return 1;
 				}
 
-				printf("Found %d file(s) in archive:\n", file_count);
+				printf("found %d file(s) in archive:\n", file_count);
 				for (int i = 0; i < file_count; i++) {
-					libsarf_file* s_file = stat_files[i];
+					libsarf_file_t* s_file = stat_files[i];
 
 					char *mode_str = malloc(sizeof(char) * 10);
 					libsarf_format_mode(mode_str, s_file->mode);							
@@ -234,6 +238,8 @@ int main(int argc, const char *argv[]) {
 						mode_str, uid_str, gid_str, file_size_str,
 						file_mod_time_str, s_file->filename);
 				}
+
+				free(stat_files);
 			}
 		}
 

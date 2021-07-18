@@ -1,11 +1,5 @@
 detected_OS := $(shell uname 2>/dev/null || echo Unknown)
-detected_OS := $(patsubst CYGWIN%,Cygwin,$(detected_OS))
-detected_OS := $(patsubst MSYS%,MSYS,$(detected_OS))
-detected_OS := $(patsubst MINGW%,MSYS,$(detected_OS))
 
-ifeq ($(detected_OS),Windows)
-    BUILT_FOR_OS += WIN32
-endif
 ifeq ($(detected_OS),Darwin)
     BUILT_FOR_OS += Apple
 endif
@@ -21,16 +15,16 @@ CFLAGS = -Wall -Wextra -g
 CFLAGS += -DLSARF_BUILT_OS=\"$(BUILT_FOR_OS)\"
 
 
-LIB_SRC_FILES = lib/sarf.c
-LIB_INCLUDE_FILE = lib/sarf.h
+LIB_SRC_FILES = lib/libsarf.c
+LIB_INCLUDE_FILE = lib/libsarf.h
 
 all: libtest
 
 libsarf.o: $(LIB_SRC_FILES) $(LIB_INCLUDE_FILE)
-	$(CC) $(CFLAGS) -c lib/sarf.c -o $@
+	$(CC) $(CFLAGS) -c $(LIB_SRC_FILES) -o $@
 
 libtest: lib/libtest.c libsarf.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 clean:
-	rm *.o libtest
+	rm *.o libtest libtest.dSYM
