@@ -1,5 +1,5 @@
-#ifndef __SARF_FLAGS__
-#define __SARF_FLAGS__
+#ifndef SARF_FLAGS
+#define SARF_FLAGS
 
 #include <inttypes.h>
 

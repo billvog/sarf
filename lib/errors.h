@@ -1,5 +1,5 @@
-#ifndef __SARF_ERRORS__
-#define __SARF_ERRORS__
+#ifndef SARF_ERRORS
+#define SARF_ERRORS
 
 #include <stdlib.h>
 #include <string.h>

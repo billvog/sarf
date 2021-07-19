@@ -2,8 +2,8 @@
 	sarf.h includes all include files required from the sarf library
 */
 
-#ifndef __SARF_LIB__
-#define __SARF_LIB__
+#ifndef SARF_LIB
+#define SARF_LIB
 
 #include <stdio.h>
 #include <stdlib.h>

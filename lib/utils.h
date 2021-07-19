@@ -1,5 +1,5 @@
-#ifndef __SARF_UTILS__
-#define __SARF_UTILS__
+#ifndef SARF_UTILS
+#define SARF_UTILS
 
 #include <inttypes.h>
 #include <time.h>

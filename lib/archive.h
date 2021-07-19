@@ -1,5 +1,5 @@
-#ifndef __SARF_ARCHIVE__
-#define __SARF_ARCHIVE__
+#ifndef SARF_ARCHIVE
+#define SARF_ARCHIVE
 
 #include "libsarf.h"
 #include "flags.h"
