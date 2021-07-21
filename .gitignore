@@ -1,7 +1,9 @@
 test
 
-libtest
-libsarf.o
-libtest.dSYM
+# libtest
+# libsarf.o
+# libtest.dSYM
 
 .DS_Store
+
+build/

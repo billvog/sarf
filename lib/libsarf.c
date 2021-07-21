@@ -96,8 +96,8 @@ int libsarf_open_archive(libsarf_archive_t* archive, const char* filename) {
 		return LSARF_ERR_A_CANNOT_OPEN;
 	}
 
-	struct stat* archive_stat = malloc(sizeof(struct stat));
-	stat(filename, archive_stat);
+	struct stat archive_stat;
+	stat(filename, &archive_stat);
 
 	archive->filename = malloc(sizeof(char) * strlen(filename) + 1);
 	strcpy(archive->filename, filename);
@@ -109,12 +109,23 @@ int libsarf_open_archive(libsarf_archive_t* archive, const char* filename) {
 }
 
 int libsarf_close_archive(libsarf_archive_t* archive) {
+	free(archive->filename);
+
 	fclose(archive->file);
 	free(archive);
+
 	return LSARF_OK;
 }
 
 int libsarf_add_file_to_archive(libsarf_archive_t* archive, const char* target, const char* destination) {
+	char *abs_ar_path = realpath(archive->filename, NULL);
+	char *abs_target_path = realpath(target, NULL);
+	
+	if (strcmp(abs_ar_path, abs_target_path) == 0) {
+		printf("skipping: %s\n", target);
+		return LSARF_OK;
+	}
+	
 	struct stat target_stat;
 	stat(target, &target_stat);
 
@@ -122,11 +133,12 @@ int libsarf_add_file_to_archive(libsarf_archive_t* archive, const char* target, 
 		return LSARF_ERR_NOT_REG_FILE;
 	}
 
-	char* target_final = malloc(sizeof(char) * 100);
-	if (target[0] == '/')
-		memmove(target_final, target + 1, strlen(target));
-	else
-		strcpy(target_final, target);
+	char* target_final = strdup(target);
+	while ((target_final[0] == '.' && (target_final[1] == '.' || target_final[1] == '/')) 
+			|| target_final[0] == '/')
+	{
+		target_final++;
+	}
 
 	char* final_dest = malloc(sizeof(char) * 100);
 	if (destination == NULL || strlen(destination) <= 0) {
@@ -137,6 +149,8 @@ int libsarf_add_file_to_archive(libsarf_archive_t* archive, const char* target, 
 			sprintf(final_dest, "%s%s", destination, target_final);
 		else strcpy(final_dest, destination);
 	}
+
+	printf("final: %s\n", final_dest);
 
 	// Write data to archive
 	fprintf(archive->file, "%-100s", final_dest);
@@ -166,7 +180,7 @@ int libsarf_add_dir_to_archive(libsarf_archive_t* archive, const char* target_di
 	if (destination != NULL && strlen(destination) > 0) {
 		struct stat dest_stat;
 		stat(destination, &dest_stat);
-		if (!S_ISDIR(dest_stat.st_mode) && destination[strlen(destination)-1] != '/') {
+		if (S_ISDIR(dest_stat.st_mode) && destination[strlen(destination)-1] != '/') {
 			return LSARF_ERR_D_INVALID;
 		}
 	}
@@ -178,16 +192,14 @@ int libsarf_add_dir_to_archive(libsarf_archive_t* archive, const char* target_di
 			if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
 				continue;
 
-			char* entpath = malloc(sizeof(char) * (strlen(target_dir) + strlen(ent->d_name) + 1));
+			char* entpath = malloc(sizeof(char) * (strlen(target_dir) + strlen(ent->d_name)));
 			sprintf(entpath, "%s/%s", target_dir, ent->d_name);
 
 			struct stat path_stat;
   			stat(entpath, &path_stat);
 
-			if (S_ISDIR(path_stat.st_mode)) {
-				if (flags & LSARF_AR_ADD_DIR_RECURS) {
-					libsarf_add_dir_to_archive(archive, entpath, destination, LSARF_AR_ADD_DIR_RECURS);
-				}
+			if (S_ISDIR(path_stat.st_mode) && (flags & LSARF_AR_ADD_DIR_RECURS)) {
+				libsarf_add_dir_to_archive(archive, entpath, destination, flags);
 			} else {
 				libsarf_add_file_to_archive(archive, entpath, destination);
 			}
@@ -208,7 +220,7 @@ int libsarf_extract_file_from_archive(libsarf_archive_t* archive, const char* ta
   	int file_found = -1;
 
   	fseek(archive->file, 0, SEEK_SET);
-	while (ftell(archive->file) < archive->stat->st_size) {
+	while (ftell(archive->file) < archive->stat.st_size) {
 		char *file_name = malloc(sizeof(char) * LSARF_FILENAME_MAX);
 		fread(file_name, 1, LSARF_FILENAME_MAX, archive->file);
 
@@ -314,7 +326,7 @@ int libsarf_count_files_in_archive(libsarf_archive_t* archive, int* file_count) 
 	*file_count = 0;
 
   	fseek(archive->file, 0, SEEK_SET);
-	while (ftell(archive->file) < archive->stat->st_size) {
+	while (ftell(archive->file) < archive->stat.st_size) {
 		(*file_count)++;
 
 		fseek(archive->file, LSARF_FILENAME_MAX + 8 + 8 + 8, SEEK_CUR);
@@ -333,7 +345,7 @@ int libsarf_count_files_in_archive(libsarf_archive_t* archive, int* file_count) 
 int libsarf_stat_files_from_archive(libsarf_archive_t* archive, libsarf_file_t*** stat_files) {
   	int file_count = 0;
   	fseek(archive->file, 0, SEEK_SET);
-	while (ftell(archive->file) < archive->stat->st_size) {
+	while (ftell(archive->file) < archive->stat.st_size) {
 		// filename
 		char *file_name = malloc(sizeof(char) * LSARF_FILENAME_MAX);
 		fread(file_name, 1, LSARF_FILENAME_MAX, archive->file);
@@ -372,7 +384,7 @@ int libsarf_stat_files_from_archive(libsarf_archive_t* archive, libsarf_file_t**
 
 		libsarf_file_t* stat = malloc(sizeof(libsarf_file_t));
 
-		stat->filename = malloc(sizeof(char) * strlen(file_name) + 1);
+		stat->filename = strdup(file_name);
 		strcpy(stat->filename, file_name);
 
 		stat->mode = file_mode;
@@ -399,7 +411,7 @@ int libsarf_remove_file_from_archive(libsarf_archive_t* archive, const char* tar
 
 	int file_found = -1;
   	fseek(archive->file, 0, SEEK_SET);
-	while (ftell(archive->file) < archive->stat->st_size) {
+	while (ftell(archive->file) < archive->stat.st_size) {
 		// filename
 		char *file_name = malloc(sizeof(char) * LSARF_FILENAME_MAX);
 		fread(file_name, 1, LSARF_FILENAME_MAX, archive->file);

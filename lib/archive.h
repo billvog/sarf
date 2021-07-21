@@ -11,7 +11,7 @@
 typedef struct {
 	char* filename;
 	FILE* file;
-	struct stat* stat;
+	struct stat stat;
 	int error;
 } libsarf_archive_t;
 

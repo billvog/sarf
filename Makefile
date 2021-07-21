@@ -1,19 +1,8 @@
-detected_OS := $(shell uname 2>/dev/null || echo Unknown)
-
-ifeq ($(detected_OS),Darwin)
-    BUILT_FOR_OS += Apple
-endif
-ifeq ($(detected_OS),Linux)
-    BUILT_FOR_OS += Linux
-endif
-ifeq ($(detected_OS),FreeBSD)
-    BUILT_FOR_OS += FreeBSD
-endif
+BUILT_FOR_OS = $(shell uname 2>/dev/null || echo Unknown)
 
 CC = clang
 CFLAGS = -Wall -Wextra -g
 CFLAGS += -DLSARF_BUILT_OS=\"$(BUILT_FOR_OS)\"
-
 
 LIB_SRC_FILES = lib/libsarf.c
 LIB_INCLUDE_FILE = lib/libsarf.h
@@ -27,4 +16,4 @@ libtest: lib/libtest.c libsarf.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 clean:
-	rm *.o libtest libtest.dSYM
+	rm -rf *.o libtest libtest.dSYM

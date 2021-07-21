@@ -24,6 +24,10 @@
 
 #define LSARF_VERSION "0.0.12"
 
+#ifndef LSARF_BUILT_OS
+#define LSARF_BUILT_OS ""
+#endif
+
 int libsarf_init();
 
 #endif
