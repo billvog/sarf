@@ -1,7 +1,10 @@
 #ifndef SARF_UTILS
 #define SARF_UTILS
 
+#include <sys/stat.h>
 #include <inttypes.h>
+#include <string.h>
+#include <stdio.h>
 #include <time.h>
 #include <pwd.h>
 #include <grp.h>

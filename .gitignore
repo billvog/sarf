@@ -1,9 +1,8 @@
 test
+libtest
 
-# libtest
-# libsarf.o
-# libtest.dSYM
-
+# Misc
 .DS_Store
 
+# CMake
 build/
