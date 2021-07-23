@@ -59,8 +59,6 @@ int libsarf_add_file_to_archive(libsarf_archive_t* archive, const char* target, 
 		else strcpy(final_dest, destination);
 	}
 
-	printf("final: %s\n", final_dest);
-
 	// Write data to archive
 	fprintf(archive->file, "%-100s", final_dest);
 	fprintf(archive->file, "%08hu", target_stat.st_mode);
@@ -81,6 +79,8 @@ int libsarf_add_file_to_archive(libsarf_archive_t* archive, const char* target, 
 	}
 
 	fclose(target_file);
+	free(target_final);
+	free(final_dest);
 
 	return LSARF_OK;
 }
@@ -158,6 +158,10 @@ int libsarf_extract_file_from_archive(libsarf_archive_t* archive, const char* ta
 			strcmp(file_name, target) != 0 &&
 			(extract_folder && strncmp(file_name, target, strlen(target)) != 0))
 		{
+			free(file_name);
+			free(file_mode_str);
+			free(file_size_str);
+
 			fseek(archive->file, file_size, SEEK_CUR);
 			continue;
 		}
@@ -233,14 +237,22 @@ int libsarf_extract_file_from_archive(libsarf_archive_t* archive, const char* ta
 	return LSARF_OK;
 }
 
-int libsarf_count_files_in_archive(libsarf_archive_t* archive, int* file_count) {
+int libsarf_count_files_in_archive(libsarf_archive_t* archive, int* file_count, const char* search) {
+	int count_all = search == NULL ? 0 : -1;
 	*file_count = 0;
 
 	fseek(archive->file, 0, SEEK_SET);
 	while (ftell(archive->file) < archive->stat.st_size) {
-		(*file_count)++;
+		// filename
+		char *file_name = malloc(sizeof(char) * LSARF_FILENAME_MAX);
+		fread(file_name, 1, LSARF_FILENAME_MAX, archive->file);
 
-		fseek(archive->file, LSARF_FILENAME_MAX + 8 + 8 + 8, SEEK_CUR);
+		// clear filename from whitespaces
+		char* fn_back = file_name + strlen(file_name);
+		while (isspace(*--fn_back));
+		*(fn_back+1) = '\0';
+
+		fseek(archive->file, 8 + 8 + 8, SEEK_CUR);
 
 		// file size
 		char *file_size_str = malloc(sizeof(char) * 12);
@@ -248,13 +260,21 @@ int libsarf_count_files_in_archive(libsarf_archive_t* archive, int* file_count) 
 		int64_t file_size = atoi(file_size_str);
 
 		fseek(archive->file, 12 + file_size, SEEK_CUR);
+
+		if (count_all == 0 || strncmp(file_name, search, strlen(search)) == 0)
+			(*file_count)++;
+
+		free(file_name);
+		free(file_size_str);
 	}
 
 	return LSARF_OK;
 }
 
-int libsarf_stat_files_from_archive(libsarf_archive_t* archive, libsarf_file_t*** stat_files) {
+int libsarf_stat_files_from_archive(libsarf_archive_t* archive, libsarf_file_t*** stat_files, const char* search) {
+	int stat_all = search == NULL ? 0 : -1;
 	int file_count = 0;
+
 	fseek(archive->file, 0, SEEK_SET);
 	while (ftell(archive->file) < archive->stat.st_size) {
 		// filename
@@ -293,19 +313,25 @@ int libsarf_stat_files_from_archive(libsarf_archive_t* archive, libsarf_file_t**
 
 		fseek(archive->file, file_size, SEEK_CUR);
 
-		libsarf_file_t* stat = malloc(sizeof(libsarf_file_t));
+		if (stat_all == 0 || strncmp(file_name, search, strlen(search)) == 0) {
+			libsarf_file_t* stat = malloc(sizeof(libsarf_file_t));
+			stat->filename = strdup(file_name);
+			stat->mode = file_mode;
+			stat->uid = file_uid;
+			stat->gid = file_gid;
+			stat->size = file_size;
+			stat->mod_time = file_mtime;
 
-		stat->filename = strdup(file_name);
-		strcpy(stat->filename, file_name);
+			(*stat_files)[file_count] = stat;
+			file_count++;
+		}
 
-		stat->mode = file_mode;
-		stat->uid = file_uid;
-		stat->gid = file_gid;
-		stat->size = file_size;
-		stat->mod_time = file_mtime;
-
-		(*stat_files)[file_count] = stat;
-		file_count++;
+		free(file_name);
+		free(file_mode_str);
+		free(file_uid_str);
+		free(file_gid_str);
+		free(file_size_str);
+		free(file_mtime_str);
 	}
 
 	return LSARF_OK;
@@ -361,6 +387,13 @@ int libsarf_remove_file_from_archive(libsarf_archive_t* archive, const char* tar
 		if (strcmp(file_name, target) == 0 ||
 			(target[strlen(target)-1] == '/' && strncmp(file_name, target, strlen(target)) == 0))
 		{
+			free(file_name);
+			free(file_mode_str);
+			free(file_uid_str);
+			free(file_gid_str);
+			free(file_size_str);
+			free(file_mtime_str);
+		
 			file_found = 0;
 			fseek(archive->file, file_size, SEEK_CUR);
 			continue;
@@ -389,6 +422,13 @@ int libsarf_remove_file_from_archive(libsarf_archive_t* archive, const char* tar
 			if (bytes_left <= 0)
 				break;
 		}
+
+		free(file_name);
+		free(file_mode_str);
+		free(file_uid_str);
+		free(file_gid_str);
+		free(file_size_str);
+		free(file_mtime_str);
 	}
 
 	fclose(temp_ar);

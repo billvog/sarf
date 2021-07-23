@@ -35,7 +35,7 @@ int libsarf_remove_file_from_archive(libsarf_archive_t* archive, const char* tar
 int libsarf_extract_all_from_archive(libsarf_archive_t* archive, const char* output);
 int libsarf_extract_file_from_archive(libsarf_archive_t* archive, const char* target, const char* output);
 
-int libsarf_count_files_in_archive(libsarf_archive_t* archive, int* file_count);
-int libsarf_stat_files_from_archive(libsarf_archive_t* archive, libsarf_file_t*** stat_files);
+int libsarf_count_files_in_archive(libsarf_archive_t* archive, int* file_count, const char* search);
+int libsarf_stat_files_from_archive(libsarf_archive_t* archive, libsarf_file_t*** stat_files, const char* search);
 
 #endif

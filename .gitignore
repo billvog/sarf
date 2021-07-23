@@ -1,7 +1,7 @@
 test
 libtest
 
-# Misc
+.vscode/
 .DS_Store
 
 # CMake
