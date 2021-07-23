@@ -28,14 +28,16 @@ typedef struct {
 int libsarf_open_archive(libsarf_archive_t* archive, const char* filename);
 int libsarf_close_archive(libsarf_archive_t* archive);
 
-int libsarf_add_file_to_archive(libsarf_archive_t* archive, const char* target, const char* destination);
-int libsarf_add_dir_to_archive(libsarf_archive_t* archive, const char* target_dir, const char* destination, sarf_flags_t flags);
-int libsarf_remove_file_from_archive(libsarf_archive_t* archive, const char* target);
+int libsarf_read_file_header(libsarf_archive_t* archive, libsarf_file_t* file_header);
 
-int libsarf_extract_all_from_archive(libsarf_archive_t* archive, const char* output);
-int libsarf_extract_file_from_archive(libsarf_archive_t* archive, const char* target, const char* output);
+int libsarf_add_file(libsarf_archive_t* archive, const char* target, const char* destination);
+int libsarf_add_dir(libsarf_archive_t* archive, const char* target_dir, const char* destination, sarf_flags_t flags);
+int libsarf_remove_file(libsarf_archive_t* archive, const char* target);
 
-int libsarf_count_files_in_archive(libsarf_archive_t* archive, int* file_count, const char* search);
-int libsarf_stat_files_from_archive(libsarf_archive_t* archive, libsarf_file_t*** stat_files, const char* search);
+int libsarf_extract_all(libsarf_archive_t* archive, const char* output);
+int libsarf_extract_file(libsarf_archive_t* archive, const char* target, const char* output);
+
+int libsarf_count_files(libsarf_archive_t* archive, int* file_count, const char* search);
+int libsarf_stat_files(libsarf_archive_t* archive, libsarf_file_t*** stat_files, const char* search);
 
 #endif

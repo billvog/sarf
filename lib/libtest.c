@@ -89,9 +89,9 @@ int main(int argc, const char *argv[]) {
 						struct stat target_stat;
   						stat(target_file, &target_stat);
   						if (S_ISDIR(target_stat.st_mode))
-  							sarf_res = libsarf_add_dir_to_archive(archive, target_file, target_dest, LSARF_AR_ADD_DIR_RECURS);
+  							sarf_res = libsarf_add_dir(archive, target_file, target_dest, LSARF_AR_ADD_DIR_RECURS);
   						else
-  							sarf_res = libsarf_add_file_to_archive(archive, target_file, target_dest);
+  							sarf_res = libsarf_add_file(archive, target_file, target_dest);
 
 						if (sarf_res != LSARF_OK) {
 							printf("E: %s: %s\n", target_file, libsarf_err2str(sarf_res));
@@ -132,7 +132,7 @@ int main(int argc, const char *argv[]) {
 							}
 						}
 
-						sarf_res = libsarf_extract_all_from_archive(archive, target_dest);
+						sarf_res = libsarf_extract_all(archive, target_dest);
 						if (sarf_res != LSARF_OK) {
 							printf("E: %s\n", libsarf_err2str(sarf_res));
 							return sarf_res;
@@ -159,7 +159,7 @@ int main(int argc, const char *argv[]) {
 							}
 						}
 
-						sarf_res = libsarf_extract_file_from_archive(archive, target_file, target_dest);
+						sarf_res = libsarf_extract_file(archive, target_file, target_dest);
 						if (sarf_res != LSARF_OK) {
 							printf("E: %s\n", libsarf_err2str(sarf_res));
 							return sarf_res;
@@ -180,7 +180,7 @@ int main(int argc, const char *argv[]) {
 						char* target_file = malloc(sizeof(char) * 100);
 						strcpy(target_file, argv[i]);
 
-						sarf_res = libsarf_remove_file_from_archive(archive, target_file);
+						sarf_res = libsarf_remove_file(archive, target_file);
 						if (sarf_res != LSARF_OK) {
 							printf("E: %s: %s\n", target_file, libsarf_err2str(sarf_res));
 							continue;
@@ -200,7 +200,7 @@ int main(int argc, const char *argv[]) {
 					char* search_file = strdup(argv[3]);
 
 					int file_count = 0;
-					sarf_res = libsarf_count_files_in_archive(archive, &file_count, search_file);
+					sarf_res = libsarf_count_files(archive, &file_count, search_file);
 					if (sarf_res != LSARF_OK) {
 						printf("E: %s\n", libsarf_err2str(archive->error));
 						return 1;
@@ -213,7 +213,7 @@ int main(int argc, const char *argv[]) {
 					}
 
 					libsarf_file_t** stat_files = malloc(sizeof(libsarf_file_t *) * file_count);
-					sarf_res = libsarf_stat_files_from_archive(archive, &stat_files, search_file);
+					sarf_res = libsarf_stat_files(archive, &stat_files, search_file);
 					if (sarf_res != LSARF_OK) {
 						printf("E: %s\n", libsarf_err2str(archive->error));
 						return 1;
@@ -249,7 +249,7 @@ int main(int argc, const char *argv[]) {
 				}
 				else {
 					int file_count = 0;
-					sarf_res = libsarf_count_files_in_archive(archive, &file_count, NULL);
+					sarf_res = libsarf_count_files(archive, &file_count, NULL);
 					if (sarf_res != LSARF_OK) {
 						printf("E: %s\n", libsarf_err2str(archive->error));
 						return 1;
@@ -262,7 +262,7 @@ int main(int argc, const char *argv[]) {
 					}
 
 					libsarf_file_t** stat_files = malloc(sizeof(libsarf_file_t *) * file_count);
-					sarf_res = libsarf_stat_files_from_archive(archive, &stat_files, NULL);
+					sarf_res = libsarf_stat_files(archive, &stat_files, NULL);
 					if (sarf_res != LSARF_OK) {
 						printf("E: %s\n", libsarf_err2str(archive->error));
 						return 1;

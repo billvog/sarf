@@ -27,7 +27,66 @@ int libsarf_close_archive(libsarf_archive_t* archive) {
 	return LSARF_OK;
 }
 
-int libsarf_add_file_to_archive(libsarf_archive_t* archive, const char* target, const char* destination) {
+int libsarf_read_file_header(libsarf_archive_t* archive, libsarf_file_t* file_header) {
+	if (!feof(archive->file)) {
+		// filename
+		char *file_name = malloc(sizeof(char) * LSARF_FILENAME_MAX);
+		fread(file_name, 1, LSARF_FILENAME_MAX, archive->file);
+
+		// clear filename from whitespaces
+		char* fn_back = file_name + strlen(file_name);
+		while (isspace(*--fn_back));
+		*(fn_back+1) = '\0';
+
+		// file mode
+		char *file_mode_str = malloc(sizeof(char) * 8);
+		fread(file_mode_str, 1, 8, archive->file);
+		uint16_t file_mode = atoi(file_mode_str);
+
+		// owner id
+		char *file_uid_str = malloc(sizeof(char) * 8);
+		fread(file_uid_str, 1, 8, archive->file);
+		uint16_t file_uid = atoi(file_uid_str);
+
+		// group id
+		char *file_gid_str = malloc(sizeof(char) * 8);
+		fread(file_gid_str, 1, 8, archive->file);
+		uint16_t file_gid = atoi(file_gid_str);
+
+		// file size
+		char *file_size_str = malloc(sizeof(char) * 12);
+		fread(file_size_str, 1, 12, archive->file);
+		int64_t file_size = atoi(file_size_str);
+
+		// last mod time
+		char *file_mtime_str = malloc(sizeof(char) * 12);
+		fread(file_mtime_str, 1, 12, archive->file);
+		long file_mtime = atol(file_mtime_str);
+
+		file_header->filename = strdup(file_name);
+		file_header->mode = file_mode;
+		file_header->uid = file_uid;
+		file_header->gid = file_gid;
+		file_header->size = file_size;
+		file_header->mod_time = file_mtime;
+
+		// deallocate memory
+		free(file_name);
+		free(file_mode_str);
+		free(file_uid_str);
+		free(file_gid_str);
+		free(file_size_str);
+		free(file_mtime_str);
+	}
+	else {
+		file_header = NULL;
+		return LSARF_ERR_A_CANNOT_OPEN;
+	}
+
+	return LSARF_OK;
+}
+
+int libsarf_add_file(libsarf_archive_t* archive, const char* target, const char* destination) {
 	char *abs_ar_path = realpath(archive->filename, NULL);
 	char *abs_target_path = realpath(target, NULL);
 	
@@ -85,7 +144,7 @@ int libsarf_add_file_to_archive(libsarf_archive_t* archive, const char* target, 
 	return LSARF_OK;
 }
 
-int libsarf_add_dir_to_archive(libsarf_archive_t* archive, const char* target_dir, const char* destination, sarf_flags_t flags) {
+int libsarf_add_dir(libsarf_archive_t* archive, const char* target_dir, const char* destination, sarf_flags_t flags) {
 	if (destination != NULL && strlen(destination) > 0) {
 		struct stat dest_stat;
 		stat(destination, &dest_stat);
@@ -108,9 +167,9 @@ int libsarf_add_dir_to_archive(libsarf_archive_t* archive, const char* target_di
 			stat(entpath, &path_stat);
 
 			if (S_ISDIR(path_stat.st_mode) && (flags & LSARF_AR_ADD_DIR_RECURS)) {
-				libsarf_add_dir_to_archive(archive, entpath, destination, flags);
+				libsarf_add_dir(archive, entpath, destination, flags);
 			} else {
-				libsarf_add_file_to_archive(archive, entpath, destination);
+				libsarf_add_file(archive, entpath, destination);
 			}
 		}
 
@@ -120,11 +179,11 @@ int libsarf_add_dir_to_archive(libsarf_archive_t* archive, const char* target_di
 	return LSARF_OK;
 }
 
-int libsarf_extract_all_from_archive(libsarf_archive_t* archive, const char* output) {
-	return libsarf_extract_file_from_archive(archive, NULL, output);
+int libsarf_extract_all(libsarf_archive_t* archive, const char* output) {
+	return libsarf_extract_file(archive, NULL, output);
 }
 
-int libsarf_extract_file_from_archive(libsarf_archive_t* archive, const char* target, const char* output) {
+int libsarf_extract_file(libsarf_archive_t* archive, const char* target, const char* output) {
 	int extract_all = target == NULL ? 0 : -1;
 	int extract_folder = target[strlen(target) - 1] == '/' ? 0 : -1;
 
@@ -132,52 +191,32 @@ int libsarf_extract_file_from_archive(libsarf_archive_t* archive, const char* ta
 
 	fseek(archive->file, 0, SEEK_SET);
 	while (ftell(archive->file) < archive->stat.st_size) {
-		char *file_name = malloc(sizeof(char) * LSARF_FILENAME_MAX);
-		fread(file_name, 1, LSARF_FILENAME_MAX, archive->file);
-
-		// clear filename from whitespaces
-		char* fn_back = file_name + strlen(file_name);
-		while (isspace(*--fn_back));
-		*(fn_back+1) = '\0';
-
-		// file mode
-		char *file_mode_str = malloc(sizeof(char) * 8);
-		fread(file_mode_str, 1, 8, archive->file);
-		uint16_t file_mode = atoi(file_mode_str);
-
-		// skip stuff we don't want
-		fseek(archive->file, 8 + 8, SEEK_CUR);
-
-		char *file_size_str = malloc(sizeof(char) * 12);
-		fread(file_size_str, 1, 12, archive->file);
-		int64_t file_size = atoi(file_size_str);
-
-		fseek(archive->file, 12, SEEK_CUR);
+		libsarf_file_t* file_header = malloc(sizeof(libsarf_file_t));
+		int res = libsarf_read_file_header(archive, file_header);
+		if (res != 0)
+			return res;
 
 		if (extract_all != 0 &&
-			strcmp(file_name, target) != 0 &&
-			(extract_folder && strncmp(file_name, target, strlen(target)) != 0))
+			strcmp(file_header->filename, target) != 0 &&
+			(extract_folder && strncmp(file_header->filename, target, strlen(target)) != 0))
 		{
-			free(file_name);
-			free(file_mode_str);
-			free(file_size_str);
-
-			fseek(archive->file, file_size, SEEK_CUR);
+			free(file_header);
+			fseek(archive->file, file_header->size, SEEK_CUR);
 			continue;
 		}
 
 		file_found = 0;
 
-		char *final_output = malloc(sizeof(char) * strlen(output) + strlen(file_name) + 1);
+		char *final_output = malloc(sizeof(char) * strlen(output) + strlen(file_header->filename) + 1);
 		if (extract_all == 0) {
-			sprintf(final_output, "%s/%s", output, file_name);
+			sprintf(final_output, "%s/%s", output, file_header->filename);
 		}
 		else {
 			if (output == NULL || strlen(output) <= 0)
-				strcpy(final_output, file_name);
+				strcpy(final_output, file_header->filename);
 			else {
 				if (output[strlen(output) - 1] == '/') {
-					sprintf(final_output, "%s%s", output, file_name);
+					sprintf(final_output, "%s%s", output, file_header->filename);
 				}
 				else
 					strcpy(final_output, output);
@@ -201,14 +240,14 @@ int libsarf_extract_file_from_archive(libsarf_archive_t* archive, const char* ta
 		free(dir_token);
 
 		FILE* output_file;
-		int output_fd = open(final_output, O_WRONLY | O_CREAT, file_mode);
+		int output_fd = open(final_output, O_WRONLY | O_CREAT, file_header->mode);
 		output_file = fdopen(output_fd, "wb");
 
 		if (output_file == NULL) {
 			return LSARF_ERR_O_CANNOT_CREATE;
 		}
 
-		int64_t bytes_left = file_size;
+		int64_t bytes_left = file_header->size;
 		char buffer[1024];
 		while (!feof(archive->file)) {
 			size_t read_size = 1024;
@@ -226,6 +265,7 @@ int libsarf_extract_file_from_archive(libsarf_archive_t* archive, const char* ta
 		}
 
 		fclose(output_file);
+		free(file_header);
 
 		if (extract_all != 0 && extract_folder != 0)
 			break;
@@ -237,107 +277,61 @@ int libsarf_extract_file_from_archive(libsarf_archive_t* archive, const char* ta
 	return LSARF_OK;
 }
 
-int libsarf_count_files_in_archive(libsarf_archive_t* archive, int* file_count, const char* search) {
+int libsarf_count_files(libsarf_archive_t* archive, int* file_count, const char* search) {
 	int count_all = search == NULL ? 0 : -1;
 	*file_count = 0;
 
 	fseek(archive->file, 0, SEEK_SET);
 	while (ftell(archive->file) < archive->stat.st_size) {
-		// filename
-		char *file_name = malloc(sizeof(char) * LSARF_FILENAME_MAX);
-		fread(file_name, 1, LSARF_FILENAME_MAX, archive->file);
+		libsarf_file_t* file_header = malloc(sizeof(libsarf_file_t));
+		int res = libsarf_read_file_header(archive, file_header);
+		if (res != 0)
+			return res;
 
-		// clear filename from whitespaces
-		char* fn_back = file_name + strlen(file_name);
-		while (isspace(*--fn_back));
-		*(fn_back+1) = '\0';
+		fseek(archive->file, file_header->size, SEEK_CUR);
 
-		fseek(archive->file, 8 + 8 + 8, SEEK_CUR);
-
-		// file size
-		char *file_size_str = malloc(sizeof(char) * 12);
-		fread(file_size_str, 1, 12, archive->file);
-		int64_t file_size = atoi(file_size_str);
-
-		fseek(archive->file, 12 + file_size, SEEK_CUR);
-
-		if (count_all == 0 || strncmp(file_name, search, strlen(search)) == 0)
+		if (count_all == 0 || strncmp(file_header->filename, search, strlen(search)) == 0)
 			(*file_count)++;
 
-		free(file_name);
-		free(file_size_str);
+		free(file_header);
 	}
 
 	return LSARF_OK;
 }
 
-int libsarf_stat_files_from_archive(libsarf_archive_t* archive, libsarf_file_t*** stat_files, const char* search) {
+int libsarf_stat_files(libsarf_archive_t* archive, libsarf_file_t*** stat_files, const char* search) {
 	int stat_all = search == NULL ? 0 : -1;
 	int file_count = 0;
 
 	fseek(archive->file, 0, SEEK_SET);
 	while (ftell(archive->file) < archive->stat.st_size) {
-		// filename
-		char *file_name = malloc(sizeof(char) * LSARF_FILENAME_MAX);
-		fread(file_name, 1, LSARF_FILENAME_MAX, archive->file);
+		libsarf_file_t* file_header = malloc(sizeof(libsarf_file_t));
+		int res = libsarf_read_file_header(archive, file_header);
+		if (res != 0)
+			return res;
+			
+		fseek(archive->file, file_header->size, SEEK_CUR);
 
-		// clear filename from whitespaces
-		char* fn_back = file_name + strlen(file_name);
-		while (isspace(*--fn_back));
-		*(fn_back+1) = '\0';
-
-		// file mode
-		char *file_mode_str = malloc(sizeof(char) * 8);
-		fread(file_mode_str, 1, 8, archive->file);
-		uint16_t file_mode = atoi(file_mode_str);
-
-		// owner id
-		char *file_uid_str = malloc(sizeof(char) * 8);
-		fread(file_uid_str, 1, 8, archive->file);
-		uint16_t file_uid = atoi(file_uid_str);
-
-		// group id
-		char *file_gid_str = malloc(sizeof(char) * 8);
-		fread(file_gid_str, 1, 8, archive->file);
-		uint16_t file_gid = atoi(file_gid_str);
-
-		// file size
-		char *file_size_str = malloc(sizeof(char) * 12);
-		fread(file_size_str, 1, 12, archive->file);
-		int64_t file_size = atoi(file_size_str);
-
-		// last mod time
-		char *file_mtime_str = malloc(sizeof(char) * 12);
-		fread(file_mtime_str, 1, 12, archive->file);
-		long file_mtime = atol(file_mtime_str);
-
-		fseek(archive->file, file_size, SEEK_CUR);
-
-		if (stat_all == 0 || strncmp(file_name, search, strlen(search)) == 0) {
+		if (stat_all == 0 || strncmp(file_header->filename, search, strlen(search)) == 0) {
 			libsarf_file_t* stat = malloc(sizeof(libsarf_file_t));
-			stat->filename = strdup(file_name);
-			stat->mode = file_mode;
-			stat->uid = file_uid;
-			stat->gid = file_gid;
-			stat->size = file_size;
-			stat->mod_time = file_mtime;
+			stat->filename = strdup(file_header->filename);
+			stat->mode = file_header->mode;
+			stat->uid = file_header->uid;
+			stat->gid = file_header->gid;
+			stat->size = file_header->size;
+			stat->mod_time = file_header->mod_time;
 
 			(*stat_files)[file_count] = stat;
 			file_count++;
 		}
 
-		free(file_name);
-		free(file_mode_str);
-		free(file_uid_str);
-		free(file_gid_str);
-		free(file_size_str);
-		free(file_mtime_str);
+		free(file_header);
 	}
 
 	return LSARF_OK;
 }
 
-int libsarf_remove_file_from_archive(libsarf_archive_t* archive, const char* target) {
+int libsarf_remove_file(libsarf_archive_t* archive, const char* target) {
 	char *temp_filename = malloc(sizeof(char) * 100);
 	sprintf(temp_filename, "%d_tempar.sarf", abs(rand() * 1000));
 
@@ -349,64 +343,29 @@ int libsarf_remove_file_from_archive(libsarf_archive_t* archive, const char* tar
 	int file_found = -1;
 	fseek(archive->file, 0, SEEK_SET);
 	while (ftell(archive->file) < archive->stat.st_size) {
-		// filename
-		char *file_name = malloc(sizeof(char) * LSARF_FILENAME_MAX);
-		fread(file_name, 1, LSARF_FILENAME_MAX, archive->file);
-
-		// clear filename from whitespaces
-		char* fn_back = file_name + strlen(file_name);
-		while (isspace(*--fn_back));
-		*(fn_back+1) = '\0';
-
-		// file mode
-		char *file_mode_str = malloc(sizeof(char) * 8);
-		fread(file_mode_str, 1, 8, archive->file);
-		uint16_t file_mode = atoi(file_mode_str);
-
-		// owner id
-		char *file_uid_str = malloc(sizeof(char) * 8);
-		fread(file_uid_str, 1, 8, archive->file);
-		uint16_t file_uid = atoi(file_uid_str);
-
-		// group id
-		char *file_gid_str = malloc(sizeof(char) * 8);
-		fread(file_gid_str, 1, 8, archive->file);
-		uint16_t file_gid = atoi(file_gid_str);
-
-		// file size
-		char *file_size_str = malloc(sizeof(char) * 12);
-		fread(file_size_str, 1, 12, archive->file);
-		int64_t file_size = atoi(file_size_str);
-
-		// last mod time
-		char *file_mtime_str = malloc(sizeof(char) * 12);
-		fread(file_mtime_str, 1, 12, archive->file);
-		long file_mtime = atol(file_mtime_str);
+		libsarf_file_t* file_header = malloc(sizeof(libsarf_file_t));
+		int res = libsarf_read_file_header(archive, file_header);
+		if (res != 0)
+			return res;
 
 		// if this is the target exclude it from the new archive
-		if (strcmp(file_name, target) == 0 ||
-			(target[strlen(target)-1] == '/' && strncmp(file_name, target, strlen(target)) == 0))
+		if (strcmp(file_header->filename, target) == 0 ||
+			(target[strlen(target)-1] == '/' && strncmp(file_header->filename, target, strlen(target)) == 0))
 		{
-			free(file_name);
-			free(file_mode_str);
-			free(file_uid_str);
-			free(file_gid_str);
-			free(file_size_str);
-			free(file_mtime_str);
-		
 			file_found = 0;
-			fseek(archive->file, file_size, SEEK_CUR);
+			free(file_header);
+			fseek(archive->file, file_header->size, SEEK_CUR);
 			continue;
 		}
 
-		fprintf(temp_ar, "%-100s", file_name);
-		fprintf(temp_ar, "%08hu", file_mode);
-		fprintf(temp_ar, "%08u", file_uid);
-		fprintf(temp_ar, "%08u", file_gid);
-		fprintf(temp_ar, "%012lld", file_size);
-		fprintf(temp_ar, "%012ld", file_mtime);
+		fprintf(temp_ar, "%-100s", file_header->filename);
+		fprintf(temp_ar, "%08hu", file_header->mode);
+		fprintf(temp_ar, "%08u", file_header->uid);
+		fprintf(temp_ar, "%08u", file_header->gid);
+		fprintf(temp_ar, "%012lld", file_header->size);
+		fprintf(temp_ar, "%012ld", file_header->mod_time);
 
-		int64_t bytes_left = file_size;
+		int64_t bytes_left = file_header->size;
 		char buffer[1024];
 		while (!feof(archive->file)) {
 			size_t read_size = 1024;
@@ -423,12 +382,7 @@ int libsarf_remove_file_from_archive(libsarf_archive_t* archive, const char* tar
 				break;
 		}
 
-		free(file_name);
-		free(file_mode_str);
-		free(file_uid_str);
-		free(file_gid_str);
-		free(file_size_str);
-		free(file_mtime_str);
+		free(file_header);
 	}
 
 	fclose(temp_ar);
