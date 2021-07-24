@@ -29,7 +29,7 @@ void libsarf_format_file_size(char *str, int64_t size) {
 void libsarf_format_epoch(char *str, long timestamp) {
 	struct tm ts;
 	ts = *localtime(&timestamp);
-	strftime(str, sizeof(str), "%d %b %r", &ts);
+	strftime(str, 24, "%d %b %I:%M", &ts);
 }
 
 void libsarf_format_uid(char *str, uint16_t uid) {
