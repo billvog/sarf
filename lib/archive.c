@@ -29,14 +29,14 @@ int libsarf_close_archive(libsarf_archive_t* archive) {
 
 int libsarf_read_file_header(libsarf_archive_t* archive, libsarf_file_t* file_header) {
 	if (!feof(archive->file)) {
-		// filename
-		char *file_name = malloc(sizeof(char) * LSARF_FILENAME_MAX);
-		fread(file_name, 1, LSARF_FILENAME_MAX, archive->file);
+		// filename size
+		char *filename_size_str = malloc(sizeof(char) * 4);
+		fread(filename_size_str, 1, 4, archive->file);
+		uint16_t filename_size = atoi(filename_size_str);
 
-		// clear filename from whitespaces
-		char* fn_back = file_name + strlen(file_name);
-		while (isspace(*--fn_back));
-		*(fn_back+1) = '\0';
+		// filename
+		char *file_name = malloc(sizeof(char) * filename_size);
+		fread(file_name, 1, filename_size, archive->file);
 
 		// file mode
 		char *file_mode_str = malloc(sizeof(char) * 8);
@@ -63,20 +63,15 @@ int libsarf_read_file_header(libsarf_archive_t* archive, libsarf_file_t* file_he
 		fread(file_mtime_str, 1, 12, archive->file);
 		long file_mtime = atol(file_mtime_str);
 
-		file_header->filename = strdup(file_name);
+		file_header->filename = file_name;
 		file_header->mode = file_mode;
 		file_header->uid = file_uid;
 		file_header->gid = file_gid;
 		file_header->size = file_size;
 		file_header->mod_time = file_mtime;
 
-		// deallocate memory
-		free(file_name);
-		free(file_mode_str);
-		free(file_uid_str);
-		free(file_gid_str);
-		free(file_size_str);
-		free(file_mtime_str);
+		// deallocating memery here appends a kind of number at the filename
+		// - interesting language C is -
 	}
 	else {
 		file_header = NULL;
@@ -87,13 +82,6 @@ int libsarf_read_file_header(libsarf_archive_t* archive, libsarf_file_t* file_he
 }
 
 int libsarf_add_file(libsarf_archive_t* archive, const char* target, const char* destination) {
-	char *abs_ar_path = realpath(archive->filename, NULL);
-	char *abs_target_path = realpath(target, NULL);
-	
-	// prevent archive from archiving it self
-	if (strcmp(abs_ar_path, abs_target_path) == 0)
-		return LSARF_OK;
-
 	struct stat target_stat;
 	stat(target, &target_stat);
 
@@ -101,12 +89,18 @@ int libsarf_add_file(libsarf_archive_t* archive, const char* target, const char*
 		return LSARF_ERR_NOT_REG_FILE;
 	}
 
-	char* target_final = strdup(target);
-	while ((target_final[0] == '.' && (target_final[1] == '.' || target_final[1] == '/'))
-			|| target_final[0] == '/')
+	int target_offset = 0;
+	while ((target[target_offset] == '.' && (target[target_offset+1] == '.' || target[target_offset+1] == '/'))
+			|| target[target_offset] == '/')
 	{
-		target_final++;
+		target_offset++;
 	}
+
+	char* target_final = malloc(sizeof(char) * (strlen(target) - target_offset + 1));
+	// fix this issue: (I DARE YOU, I DOUBLE DARE YOU MOTHERFUCKER)
+	//  before memcpy: target="./some/example/target"
+	memcpy(target_final, target + target_offset, strlen(target) - target_offset);
+	//  after memcpy:  target="./some/example/target./some/example/target"
 
 	char* final_dest = malloc(sizeof(char) * 100);
 	if (destination == NULL || strlen(destination) <= 0) {
@@ -118,19 +112,25 @@ int libsarf_add_file(libsarf_archive_t* archive, const char* target, const char*
 		else strcpy(final_dest, destination);
 	}
 
-	// Write data to archive
-	fprintf(archive->file, "%-100s", final_dest);
-	fprintf(archive->file, "%08hu", target_stat.st_mode);
-	fprintf(archive->file, "%08u", target_stat.st_uid);
-	fprintf(archive->file, "%08u", target_stat.st_gid);
-	fprintf(archive->file, "%012lld", target_stat.st_size);
-	fprintf(archive->file, "%012ld", target_stat.st_mtimespec.tv_sec);
+	if (strlen(final_dest) > PATH_MAX) {
+		return LSARF_ERR_T_FILENAME_MAX;
+	}
 
 	FILE* target_file = fopen(target, "rb");
 	if (target_file == NULL) {
 		return LSARF_ERR_T_CANNOT_OPEN;
 	}
 
+	// Write file header to archive
+	fprintf(archive->file, "%04lu", strlen(final_dest));
+	fprintf(archive->file, "%s", final_dest);
+	fprintf(archive->file, "%08hu", target_stat.st_mode);
+	fprintf(archive->file, "%08u", target_stat.st_uid);
+	fprintf(archive->file, "%08u", target_stat.st_gid);
+	fprintf(archive->file, "%012lld", target_stat.st_size);
+	fprintf(archive->file, "%012ld", target_stat.st_mtimespec.tv_sec);
+
+	// Write file contents to archive
 	char buffer[1024];
 	while (!feof(target_file)) {
 		size_t bytes_read = fread(buffer, 1, 1024, target_file);
@@ -138,12 +138,14 @@ int libsarf_add_file(libsarf_archive_t* archive, const char* target, const char*
 	}
 
 	fclose(target_file);
-	free(target_final);
-	free(final_dest);
 
 	return LSARF_OK;
 }
 
+// **handle errors**
+// i'm thinking removing this from the library and
+// if everybody wants to add a dir he can implement
+// his own function (on his code)
 int libsarf_add_dir(libsarf_archive_t* archive, const char* target_dir, const char* destination, sarf_flags_t flags) {
 	if (destination != NULL && strlen(destination) > 0) {
 		struct stat dest_stat;
@@ -358,7 +360,8 @@ int libsarf_remove_file(libsarf_archive_t* archive, const char* target) {
 			continue;
 		}
 
-		fprintf(temp_ar, "%-100s", file_header->filename);
+		fprintf(temp_ar, "%04lu", strlen(file_header->filename));
+		fprintf(temp_ar, "%s", file_header->filename);
 		fprintf(temp_ar, "%08hu", file_header->mode);
 		fprintf(temp_ar, "%08u", file_header->uid);
 		fprintf(temp_ar, "%08u", file_header->gid);

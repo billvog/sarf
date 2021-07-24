@@ -1,6 +1,6 @@
 #include "errors.h"
 
-char* libsarf_err2str(int err) {
+const char* libsarf_err2str(int err) {
 	char* error_str = malloc(sizeof(char) * 100);
 
 	switch (err) {
@@ -26,10 +26,10 @@ char* libsarf_err2str(int err) {
 			strcpy(error_str, "invalid destination path given");
 			break;
 		case LSARF_ERR_T_FILENAME_MAX:
-			strcpy(error_str, "target filename is greater that 100");
+			strcpy(error_str, "target filename has exceeded the maximum path length");
 			break;
 		case LSARF_OK:
-			strcpy(error_str, "");
+			error_str = NULL;
 			break;
 		default:
 			strcpy(error_str, "unknown error occured");

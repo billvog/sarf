@@ -4,9 +4,6 @@
 #include "libsarf.h"
 #include "flags.h"
 
-// limits
-#define LSARF_FILENAME_MAX 100
-
 // structs
 typedef struct {
 	char* filename;
