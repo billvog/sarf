@@ -34,10 +34,16 @@ void libsarf_format_epoch(char *str, long timestamp) {
 
 void libsarf_format_uid(char *str, uint16_t uid) {
 	struct passwd *pws = getpwuid(uid);
-	strcpy(str, pws->pw_name);
+	if (pws == NULL)
+		strcpy(str, "(unknown)");
+	else
+		strcpy(str, pws->pw_name);
 }
 
 void libsarf_format_gid(char *str, uint16_t gid) {
 	struct group *grp = getgrgid(gid);
-	strcpy(str, grp->gr_name);
+	if (grp == NULL)
+		strcpy(str, "(unknown)");
+	else
+		strcpy(str, grp->gr_name);
 }
