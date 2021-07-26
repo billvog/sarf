@@ -217,8 +217,11 @@ int libsarf_extract_file(libsarf_archive_t* archive, const char* target, const c
 			if (output == NULL || strlen(output) <= 0)
 				strcpy(final_output, file_header->filename);
 			else {
-				if (output[strlen(output) - 1] == '/') {
-					sprintf(final_output, "%s%s", output, file_header->filename);
+				struct stat output_stat;
+				stat(output, &output_stat);
+
+				if (S_ISDIR(output_stat.st_mode) || output[strlen(output) - 1] == '/') {
+					sprintf(final_output, "%s/%s", output, file_header->filename);
 				}
 				else
 					strcpy(final_output, output);
