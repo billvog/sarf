@@ -231,7 +231,10 @@ int libsarf_extract_file(libsarf_archive_t* archive, const char* target, const c
 		char* parent_dirs = dirname(final_output);
 		char* current_dir_state = malloc(sizeof(char) * strlen(parent_dirs));
 		char* dir_token = strtok(parent_dirs, "/");
-		strcpy(current_dir_state, dir_token);
+
+		if (final_output[0] == '/')
+		 sprintf(current_dir_state, "/%s", dir_token);
+		else strcpy(current_dir_state, dir_token);
 
 		while (dir_token != NULL) {
 			mkdir(current_dir_state, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
