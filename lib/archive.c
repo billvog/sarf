@@ -187,7 +187,7 @@ int libsarf_extract_all(libsarf_archive_t* archive, const char* output) {
 
 int libsarf_extract_file(libsarf_archive_t* archive, const char* target, const char* output) {
 	int extract_all = target == NULL ? 0 : -1;
-	int extract_folder = target[strlen(target) - 1] == '/' ? 0 : -1;
+	int extract_folder = extract_all != 0 && target[strlen(target) - 1] == '/' ? 0 : -1;
 
 	int file_found = -1;
 
