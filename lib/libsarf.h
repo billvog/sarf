@@ -2,6 +2,10 @@
 	sarf.h includes all include files required from the sarf library
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef SARF_LIB
 #define SARF_LIB
 
@@ -30,4 +34,8 @@
 
 int libsarf_init();
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
