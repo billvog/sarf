@@ -88,6 +88,7 @@ int main(int argc, const char *argv[]) {
 
 						struct stat target_stat;
   						stat(target_file, &target_stat);
+
   						if (S_ISDIR(target_stat.st_mode))
   							sarf_res = libsarf_add_dir(archive, target_file, target_dest, LSARF_AR_ADD_DIR_RECURS);
   						else
@@ -226,7 +227,7 @@ int main(int argc, const char *argv[]) {
 						libsarf_file_t* s_file = stat_files[i];
 
 						char *mode_str = malloc(sizeof(char) * 10);
-						libsarf_format_mode(mode_str, s_file->mode);							
+						libsarf_format_mode(mode_str, s_file->mode);
 
 						char *uid_str = malloc(sizeof(char) * 128);
 						libsarf_format_uid(uid_str, s_file->uid);
@@ -235,7 +236,8 @@ int main(int argc, const char *argv[]) {
 						libsarf_format_gid(gid_str, s_file->gid);
 
 						char *file_size_str = malloc(sizeof(char) * 12);
-						libsarf_format_file_size(file_size_str, s_file->size);
+						if (s_file->mode & S_IFDIR) sprintf(file_size_str, "---");
+						else libsarf_format_file_size(file_size_str, s_file->size);
 
 						char *file_mod_time_str = malloc(sizeof(char) * 12);
 						libsarf_format_epoch(file_mod_time_str, s_file->mod_time);
@@ -284,7 +286,8 @@ int main(int argc, const char *argv[]) {
 						libsarf_format_gid(gid_str, s_file->gid);
 
 						char *file_size_str = malloc(sizeof(char) * 12);
-						libsarf_format_file_size(file_size_str, s_file->size);
+						if (s_file->mode & S_IFDIR) sprintf(file_size_str, "0");
+						else libsarf_format_file_size(file_size_str, s_file->size);
 
 						char *file_mod_time_str = malloc(sizeof(char) * 12);
 						libsarf_format_epoch(file_mod_time_str, s_file->mod_time);
