@@ -1,7 +1,21 @@
 #include "archive.h"
 
-int libsarf_open_archive(libsarf_archive_t* archive, const char* filename) {
-	FILE* archive_file = fopen(filename, "ab+");
+int libsarf_open_archive(libsarf_archive_t* archive, const char* filename, libsarf_open_archive_mode_t open_mode) {
+	if (!access(filename, F_OK)) {
+		return LSARF_ERR_A_CANNOT_OPEN;
+	}
+
+	FILE* archive_file;
+	
+	switch (open_mode) {
+		case LSARF_READ_ONLY:
+			archive_file = fopen(filename, "ab+");
+			break;
+		default:
+			archive_file = fopen(filename, "rb");
+			break;
+	}
+
 	if (archive_file == NULL) {
 		return LSARF_ERR_A_CANNOT_OPEN;
 	}
@@ -13,6 +27,7 @@ int libsarf_open_archive(libsarf_archive_t* archive, const char* filename) {
 	strcpy(archive->filename, filename);
 
 	archive->file = archive_file;
+	archive->open_mode = open_mode;
 	archive->stat = archive_stat;
 
 	return LSARF_OK;
@@ -27,7 +42,7 @@ int libsarf_close_archive(libsarf_archive_t* archive) {
 	return LSARF_OK;
 }
 
-int libsarf_read_file_header(libsarf_archive_t* archive, libsarf_file_t* file_header) {
+int libsarf_read_file_header(libsarf_archive_t* archive, libsarf_entry_t* file_header) {
 	if (!feof(archive->file)) {
 		// filename size
 		char *filename_size_str = malloc(sizeof(char) * 4);
@@ -69,9 +84,6 @@ int libsarf_read_file_header(libsarf_archive_t* archive, libsarf_file_t* file_he
 		file_header->gid = file_gid;
 		file_header->size = file_size;
 		file_header->mod_time = file_mtime;
-
-		// deallocating memery here appends a kind of number at the filename
-		// - interesting language C is -
 	}
 	else {
 		file_header = NULL;
@@ -82,6 +94,9 @@ int libsarf_read_file_header(libsarf_archive_t* archive, libsarf_file_t* file_he
 }
 
 int libsarf_add_file(libsarf_archive_t* archive, const char* target, const char* destination) {
+	if (archive->open_mode == LSARF_READ_ONLY)
+		return LSARF_ERR_A_CANNOT_WRITE;
+	
 	struct stat target_stat;
 	stat(target, &target_stat);
 
@@ -93,10 +108,7 @@ int libsarf_add_file(libsarf_archive_t* archive, const char* target, const char*
 	}
 
 	char* target_final = malloc(sizeof(char) * (strlen(target) - target_offset + 1));
-	// fix this issue:
-	//  before memcpy: target="./some/example/target"
 	memcpy(target_final, target + target_offset, strlen(target) - target_offset);
-	//  after memcpy:  target="./some/example/target./some/example/target"
 
 	char* final_dest = malloc(sizeof(char) * 100);
 	if (destination == NULL || strlen(destination) <= 0) {
@@ -128,9 +140,9 @@ int libsarf_add_file(libsarf_archive_t* archive, const char* target, const char*
 		fprintf(archive->file, "%012ld", target_stat.st_mtimespec.tv_sec);
 
 		// Write file contents to archive
-		char buffer[1024];
+		char buffer[LSARF_CHUNK_SIZE];
 		while (!feof(target_file)) {
-			size_t bytes_read = fread(buffer, 1, 1024, target_file);
+			size_t bytes_read = fread(buffer, 1, LSARF_CHUNK_SIZE, target_file);
 			fwrite(buffer, 1, bytes_read, archive->file);
 		}
 
@@ -152,6 +164,10 @@ int libsarf_add_file(libsarf_archive_t* archive, const char* target, const char*
 
 // **handle errors**
 int libsarf_add_dir(libsarf_archive_t* archive, const char* target_dir, const char* destination, sarf_flags_t flags) {
+	if (archive->open_mode == LSARF_READ_ONLY)
+		return LSARF_ERR_A_CANNOT_WRITE;
+
+
 	if (destination != NULL && strlen(destination) > 0) {
 		struct stat dest_stat;
 		stat(destination, &dest_stat);
@@ -198,7 +214,7 @@ int libsarf_extract_file(libsarf_archive_t* archive, const char* target, const c
 
 	fseek(archive->file, 0, SEEK_SET);
 	while (ftell(archive->file) < archive->stat.st_size) {
-		libsarf_file_t* file_header = malloc(sizeof(libsarf_file_t));
+		libsarf_entry_t* file_header = malloc(sizeof(libsarf_entry_t));
 		int res = libsarf_read_file_header(archive, file_header);
 		if (res != 0)
 			return res;
@@ -296,7 +312,7 @@ int libsarf_count_files(libsarf_archive_t* archive, int* file_count, const char*
 
 	fseek(archive->file, 0, SEEK_SET);
 	while (ftell(archive->file) < archive->stat.st_size) {
-		libsarf_file_t* file_header = malloc(sizeof(libsarf_file_t));
+		libsarf_entry_t* file_header = malloc(sizeof(libsarf_entry_t));
 		int res = libsarf_read_file_header(archive, file_header);
 		if (res != 0)
 			return res;
@@ -312,13 +328,13 @@ int libsarf_count_files(libsarf_archive_t* archive, int* file_count, const char*
 	return LSARF_OK;
 }
 
-int libsarf_stat_files(libsarf_archive_t* archive, libsarf_file_t*** stat_files, const char* search) {
+int libsarf_stat_files(libsarf_archive_t* archive, libsarf_entry_t*** stat_files, const char* search) {
 	int stat_all = search == NULL ? 0 : -1;
 	int file_count = 0;
 
 	fseek(archive->file, 0, SEEK_SET);
 	while (ftell(archive->file) < archive->stat.st_size) {
-		libsarf_file_t* file_header = malloc(sizeof(libsarf_file_t));
+		libsarf_entry_t* file_header = malloc(sizeof(libsarf_entry_t));
 		int res = libsarf_read_file_header(archive, file_header);
 		if (res != 0)
 			return res;
@@ -326,7 +342,7 @@ int libsarf_stat_files(libsarf_archive_t* archive, libsarf_file_t*** stat_files,
 		fseek(archive->file, file_header->size, SEEK_CUR);
 
 		if (stat_all == 0 || strncmp(file_header->filename, search, strlen(search)) == 0) {
-			libsarf_file_t* stat = malloc(sizeof(libsarf_file_t));
+			libsarf_entry_t* stat = malloc(sizeof(libsarf_entry_t));
 			stat->filename = strdup(file_header->filename);
 			stat->mode = file_header->mode;
 			stat->uid = file_header->uid;
@@ -345,8 +361,11 @@ int libsarf_stat_files(libsarf_archive_t* archive, libsarf_file_t*** stat_files,
 }
 
 int libsarf_remove_file(libsarf_archive_t* archive, const char* target) {
+	if (archive->open_mode == LSARF_READ_ONLY)
+		return LSARF_ERR_A_CANNOT_WRITE;
+
 	char *temp_filename = malloc(sizeof(char) * 100);
-	sprintf(temp_filename, "%d_tempar.sarf", abs(rand() * 1000));
+	sprintf(temp_filename, "%s.sarf.%d", basename(archive->filename), abs(rand() * 1000));
 
 	FILE* temp_ar = fopen(temp_filename, "wb");
 	if (temp_ar == NULL) {
@@ -356,7 +375,7 @@ int libsarf_remove_file(libsarf_archive_t* archive, const char* target) {
 	int file_found = -1;
 	fseek(archive->file, 0, SEEK_SET);
 	while (ftell(archive->file) < archive->stat.st_size) {
-		libsarf_file_t* file_header = malloc(sizeof(libsarf_file_t));
+		libsarf_entry_t* file_header = malloc(sizeof(libsarf_entry_t));
 		int res = libsarf_read_file_header(archive, file_header);
 		if (res != 0)
 			return res;
@@ -380,10 +399,10 @@ int libsarf_remove_file(libsarf_archive_t* archive, const char* target) {
 		fprintf(temp_ar, "%012ld", file_header->mod_time);
 
 		int64_t bytes_left = file_header->size;
-		char buffer[1024];
+		char buffer[LSARF_CHUNK_SIZE];
 		while (!feof(archive->file)) {
-			size_t read_size = 1024;
-			if (bytes_left < 1024) {
+			size_t read_size = LSARF_CHUNK_SIZE;
+			if (bytes_left < LSARF_CHUNK_SIZE) {
 				read_size = bytes_left;
 			}
 
