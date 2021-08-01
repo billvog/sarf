@@ -1,33 +1,34 @@
 #include "archive.h"
 
-int libsarf_open_archive(libsarf_archive_t* archive, const char* filename, libsarf_open_archive_mode_t open_mode) {
-	if (!access(filename, F_OK)) {
-		return LSARF_ERR_A_CANNOT_OPEN;
+int libsarf_open_archive(libsarf_archive_t* archive, const char* filename, sarf_flags_t flags) {
+	struct stat archive_stat;
+	int exists = stat(filename, &archive_stat);
+	
+	if (!(flags & LSARF_CREATE) && exists != 0) {
+		return LSARF_ERR_A_NOT_EXISTS;
 	}
 
 	FILE* archive_file;
-	
-	switch (open_mode) {
-		case LSARF_READ_ONLY:
+
+	if (flags & LSARF_READ_ONLY) {
+		archive_file = fopen(filename, "rb");	
+	}
+	else {
+		if (flags & LSARF_TRUNC)
+			archive_file = fopen(filename, "wb+");
+		else
 			archive_file = fopen(filename, "ab+");
-			break;
-		default:
-			archive_file = fopen(filename, "rb");
-			break;
 	}
 
 	if (archive_file == NULL) {
 		return LSARF_ERR_A_CANNOT_OPEN;
 	}
 
-	struct stat archive_stat;
-	stat(filename, &archive_stat);
-
 	archive->filename = malloc(sizeof(char) * strlen(filename) + 1);
 	strcpy(archive->filename, filename);
 
 	archive->file = archive_file;
-	archive->open_mode = open_mode;
+	archive->open_mode = flags & LSARF_READ_ONLY ? LSARF_READ_ONLY : LSARF_WRITE;
 	archive->stat = archive_stat;
 
 	return LSARF_OK;
@@ -191,7 +192,7 @@ int libsarf_add_dir(libsarf_archive_t* archive, const char* target_dir, const ch
 			
 			libsarf_add_file(archive, entpath, destination);
 
-			if (S_ISDIR(path_stat.st_mode) && (flags & LSARF_AR_ADD_DIR_RECURS)) {
+			if (S_ISDIR(path_stat.st_mode) && (flags & LSARF_RECURSIVE)) {
 				libsarf_add_dir(archive, entpath, destination, flags);
 			}
 		}
@@ -328,12 +329,14 @@ int libsarf_count_files(libsarf_archive_t* archive, int* file_count, const char*
 	return LSARF_OK;
 }
 
-int libsarf_stat_files(libsarf_archive_t* archive, libsarf_entry_t*** stat_files, const char* search) {
-	int stat_all = search == NULL ? 0 : -1;
-	int file_count = 0;
+int libsarf_stat_file(libsarf_archive_t* archive, libsarf_entry_t* stat, int index) {
+	int curr_index = 0;
+	int entry_found = -1;
 
 	fseek(archive->file, 0, SEEK_SET);
 	while (ftell(archive->file) < archive->stat.st_size) {
+		curr_index++;
+
 		libsarf_entry_t* file_header = malloc(sizeof(libsarf_entry_t));
 		int res = libsarf_read_file_header(archive, file_header);
 		if (res != 0)
@@ -341,21 +344,23 @@ int libsarf_stat_files(libsarf_archive_t* archive, libsarf_entry_t*** stat_files
 			
 		fseek(archive->file, file_header->size, SEEK_CUR);
 
-		if (stat_all == 0 || strncmp(file_header->filename, search, strlen(search)) == 0) {
-			libsarf_entry_t* stat = malloc(sizeof(libsarf_entry_t));
-			stat->filename = strdup(file_header->filename);
-			stat->mode = file_header->mode;
-			stat->uid = file_header->uid;
-			stat->gid = file_header->gid;
-			stat->size = file_header->size;
-			stat->mod_time = file_header->mod_time;
+		if (curr_index == index) {
+			libsarf_entry_t* entry = malloc(sizeof(libsarf_entry_t));
+			entry->filename = strdup(file_header->filename);
+			entry->mode = file_header->mode;
+			entry->uid = file_header->uid;
+			entry->gid = file_header->gid;
+			entry->size = file_header->size;
+			entry->mod_time = file_header->mod_time;
 
-			(*stat_files)[file_count] = stat;
-			file_count++;
+			stat = entry;
+			entry_found = 0;
 		}
 
 		free(file_header);
 	}
+
+	// if (entry_found == -1);
 
 	return LSARF_OK;
 }

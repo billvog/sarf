@@ -4,8 +4,10 @@
 #include <sys/stat.h>
 #include <inttypes.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <math.h>
 #include <pwd.h>
 #include <grp.h>
 

@@ -15,16 +15,32 @@ void libsarf_format_mode(char *str, uint16_t mode) {
 }
 
 void libsarf_format_file_size(char *str, int64_t size) {
-	if (size >= 1000000000000)
-		sprintf(str, "%lldT", size / 1000000000000);
-	else if (size >= 1000000000)
-		sprintf(str, "%lldG", size / 1000000000);
-	else if (size >= 1000000)
-		sprintf(str, "%lldM", size / 1000000);
-	else if (size >= 1000)
-		sprintf(str, "%lldK", size / 1000);
-	else
-		sprintf(str, "%lldB", size);
+	double decimal_size;
+	char* unit = malloc(sizeof(char) * 6);
+
+	if (size >= 1000000000000) {
+		decimal_size = (double) size / 1000000000000.0;
+		strcpy(unit, "TB");
+	}
+	else if (size >= 1000000000) {
+		decimal_size = (double) size / 1000000000.0;
+		strcpy(unit, "GB");
+	}
+	else if (size >= 1000000) {
+		decimal_size = (double) size / 1000000.0;
+		strcpy(unit, "MB");
+	}
+	else if (size >= 1000) {
+		decimal_size = (double) size / 1000.0;
+		strcpy(unit, "KB");
+	}
+	else {
+		decimal_size = (double) size;
+		strcpy(unit, "B");
+	}
+
+	int rounded_size = round(decimal_size);
+	sprintf(str, "%d%s", rounded_size, unit);
 }
 
 void libsarf_format_epoch(char *str, long timestamp) {

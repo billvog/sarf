@@ -11,17 +11,14 @@
 
 int print_help() {
 	printf("sarf, a simple archiving tool for unix.\n");
-	printf("find open-source @ https://github.com/billvog/sarf\n\n");
-	printf("usage: sarf [--help] [--version]\n");
+	printf("Find open-source @ https://github.com/billvog/sarf\n\n");
+	printf("Usage: sarf [--help] [--version]\n");
 	printf("            [command] [archive] [switches...] [files...]\n\n");
-	printf("commands:\n");
-	printf(" a\tAdds one or multiple files\n");
-	printf("rm\tRemoves one or multiple files\n");
-	printf("x\tExtracts one or multiple files\n");
-	printf("s\tStats a files or a path\n\n");	
-	printf("switches:\n");
-	printf("-d\tSpecifies the destination of a file in archive\n");
-	printf("-o\tSpecifies the output path in case of extracting\n");
+	printf("Commands:\n");
+	printf("  -a Add/Replace  -rm Remove  -x Extract  -s Stat\n\n");
+	printf("Switches:\n");
+	printf("  -d Specifies the destination of a file in archive\n");
+	printf("  -o Specifies the output path in case of extracting\n");
 	return 0;
 }
 
@@ -32,10 +29,6 @@ int main(int argc, const char *argv[]) {
 	else if (strcmp(argv[1], "--version") == 0) {
 		printf("sarf version %s (%s)\n", LSARF_VERSION, LSARF_BUILT_OS);
 		return 0;
-	}
-	else if (argv[1][0] == '-') {
-		printf("E: invalid option -- %s\n", argv[1]);
-		return 1;
 	}
 	else {
 		if (libsarf_init() != 0) {
@@ -48,8 +41,10 @@ int main(int argc, const char *argv[]) {
 			exit(1);
 		}
 
+		char* command = strdup(argv[1]);
+
 		char* archive_file = malloc(sizeof(char) * 64);
-		strcpy(archive_file, argv[1]);
+		strcpy(archive_file, argv[2]);
 
 		libsarf_archive_t* archive = malloc(sizeof(libsarf_archive_t));
 
@@ -61,7 +56,7 @@ int main(int argc, const char *argv[]) {
 		}
 
 		// add file to archive
-		if (strcmp(argv[1], "a") == 0) {
+		if (strcmp(command, "-a") == 0) {
 			if (argc > 2) {
 				// find destintation if given
 				int args_offset = 0;
@@ -103,74 +98,68 @@ int main(int argc, const char *argv[]) {
 			}
 		}
 		// extract file from archive
-		else if (strcmp(argv[1], "x") == 0) {
-			if (argc > 3) {
-				if (strcmp(argv[2], "-all") == 0) {
-					char* target_dest = malloc(sizeof(char) * PATH_MAX);
+		else if (strcmp(command, "-x") == 0) {
+			if (argc == 3 || (argc == 5 && strcmp(argv[3], "-o") == 0)) {
+				char* target_dest = malloc(sizeof(char) * PATH_MAX);
 
-					if (argc > 3) {
-						if (strcmp(argv[3], "-o") == 0) {
-							if (argc > 4) {
-								strcpy(target_dest, argv[4]);
-							}
-							else {
-								printf("E: please specify an output\n");
-								libsarf_close_archive(archive);
-								exit(1);
-							}
+				if (argc > 3) {
+					if (strcmp(argv[3], "-o") == 0) {
+						if (argc > 4) {
+							strcpy(target_dest, argv[4]);
 						}
-					}
-					else {
-						if (getcwd(target_dest, sizeof(target_dest)) == NULL) {
-							printf("E: cannot get current directory\n");
+						else {
+							printf("E: please specify an output\n");
 							libsarf_close_archive(archive);
 							exit(1);
 						}
 					}
-
-					sarf_res = libsarf_extract_all(archive, target_dest);
-					if (sarf_res != LSARF_OK) {
-						printf("E: %s\n", libsarf_err2str(sarf_res));
-						return sarf_res;
-					}
-
-					printf("e *\n");
 				}
 				else {
-					char* target_file = malloc(sizeof(char) * 100);
-					char* target_dest = malloc(sizeof(char) * 100);
-
-					strcpy(target_file, argv[3]);
-
-					if (argc > 3) {
-						if (strcmp(argv[4], "-o") == 0) {
-							if (argc > 4) {
-								strcpy(target_dest, argv[4]);
-							}
-							else {
-								printf("E: please specify an output\n");
-								libsarf_close_archive(archive);
-								exit(1);
-							}
-						}
+					if (getcwd(target_dest, sizeof(target_dest)) == NULL) {
+						printf("E: cannot get current directory\n");
+						libsarf_close_archive(archive);
+						exit(1);
 					}
-
-					sarf_res = libsarf_extract_file(archive, target_file, target_dest);
-					if (sarf_res != LSARF_OK) {
-						printf("E: %s\n", libsarf_err2str(sarf_res));
-						return sarf_res;
-					}
-
-					printf("e %s\n", target_dest);
 				}
+
+				sarf_res = libsarf_extract_all(archive, target_dest);
+				if (sarf_res != LSARF_OK) {
+					printf("E: %s\n", libsarf_err2str(sarf_res));
+					return sarf_res;
+				}
+
+				printf("e *\n");
 			}
 			else {
-				printf("E: not enough options\n");
-				return 1;
+				char* target_file = malloc(sizeof(char) * 100);
+				char* target_dest = malloc(sizeof(char) * 100);
+
+				strcpy(target_file, argv[3]);
+
+				if (argc > 3) {
+					if (strcmp(argv[4], "-o") == 0) {
+						if (argc > 4) {
+							strcpy(target_dest, argv[4]);
+						}
+						else {
+							printf("E: please specify an output\n");
+							libsarf_close_archive(archive);
+							exit(1);
+						}
+					}
+				}
+
+				sarf_res = libsarf_extract_file(archive, target_file, target_dest);
+				if (sarf_res != LSARF_OK) {
+					printf("E: %s\n", libsarf_err2str(sarf_res));
+					return sarf_res;
+				}
+
+				printf("e %s\n", target_dest);
 			}
 		}
 		// remove file from archive
-		else if (strcmp(argv[2], "-rm") == 0) {
+		else if (strcmp(command, "-rm") == 0) {
 			if (argc > 3) {
 				for (int i = 3; i < argc; ++i) {
 					char* target_file = malloc(sizeof(char) * 100);
@@ -191,7 +180,7 @@ int main(int argc, const char *argv[]) {
 			}
 		}
 		// stat files from archive
-		else if (strcmp(argv[2], "-stat") == 0) {
+		else if (strcmp(command, "-s") == 0) {
 			if (argc > 3) {
 				char* search_file = strdup(argv[3]);
 

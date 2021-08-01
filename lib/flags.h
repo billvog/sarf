@@ -6,6 +6,9 @@
 typedef uint32_t sarf_flags_t;
 
 /* archive flags */
-#define LSARF_AR_ADD_DIR_RECURS 	1u
+#define LSARF_CREATE			1u
+#define LSARF_TRUNC				2u
+#define LSARF_RDONLY			3u
+#define LSARF_RECURSIVE 		4u
 
 #endif

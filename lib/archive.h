@@ -30,7 +30,7 @@ typedef struct {
 } libsarf_entry_t;
 
 // functions
-int libsarf_open_archive(libsarf_archive_t* archive, const char* filename, libsarf_open_archive_mode_t open_mode);
+int libsarf_open_archive(libsarf_archive_t* archive, const char* filename, sarf_flags_t flags);
 int libsarf_close_archive(libsarf_archive_t* archive);
 
 int libsarf_read_file_header(libsarf_archive_t* archive, libsarf_entry_t* file_header);
@@ -43,6 +43,6 @@ int libsarf_extract_all(libsarf_archive_t* archive, const char* output);
 int libsarf_extract_file(libsarf_archive_t* archive, const char* target, const char* output);
 
 int libsarf_count_files(libsarf_archive_t* archive, int* file_count, const char* search);
-int libsarf_stat_files(libsarf_archive_t* archive, libsarf_entry_t*** stat_files, const char* search);
+int libsarf_stat_file(libsarf_archive_t* archive, libsarf_entry_t* stat, int index);
 
 #endif

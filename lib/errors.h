@@ -14,6 +14,7 @@
 #define LSARF_ERR_D_INVALID				7
 #define LSARF_ERR_T_FILENAME_MAX		8
 #define LSARF_ERR_A_CANNOT_WRITE		9
+#define LSARF_ERR_A_NOT_EXISTS			10
 
 const char* libsarf_err2str(int err);
 
