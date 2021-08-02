@@ -1,4 +1,4 @@
-#include "libsarf.h"
+#include "sarf_int.h"
 
 int libsarf_init() {
 	srand(time(NULL));

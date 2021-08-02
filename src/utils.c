@@ -1,6 +1,6 @@
 #include "utils.h"
 
-void libsarf_format_mode(char *str, uint16_t mode) {
+void format_mode(char *str, uint16_t mode) {
 	str[0] = (mode & S_IFDIR) ? 'd' : '-';
 	str[1] = (mode & S_IRUSR) ? 'r' : '-';
 	str[2] = (mode & S_IWUSR) ? 'w' : '-';
@@ -14,7 +14,7 @@ void libsarf_format_mode(char *str, uint16_t mode) {
 	str[10] = '\0';
 }
 
-void libsarf_format_file_size(char *str, int64_t size) {
+void format_file_size(char *str, int64_t size) {
 	double decimal_size;
 	char* unit = malloc(sizeof(char) * 6);
 
@@ -43,13 +43,13 @@ void libsarf_format_file_size(char *str, int64_t size) {
 	sprintf(str, "%d%s", rounded_size, unit);
 }
 
-void libsarf_format_epoch(char *str, long timestamp) {
+void format_epoch(char *str, long timestamp) {
 	struct tm ts;
 	ts = *localtime(&timestamp);
 	strftime(str, 24, "%d %b %I:%M", &ts);
 }
 
-void libsarf_format_uid(char *str, uint16_t uid) {
+void format_uid(char *str, uint16_t uid) {
 	struct passwd *pws = getpwuid(uid);
 	if (pws == NULL)
 		strcpy(str, "(unknown)");
@@ -57,7 +57,7 @@ void libsarf_format_uid(char *str, uint16_t uid) {
 		strcpy(str, pws->pw_name);
 }
 
-void libsarf_format_gid(char *str, uint16_t gid) {
+void format_gid(char *str, uint16_t gid) {
 	struct group *grp = getgrgid(gid);
 	if (grp == NULL)
 		strcpy(str, "(unknown)");
