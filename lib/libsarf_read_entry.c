@@ -45,7 +45,7 @@ int _libsarf_read_entry(libsarf_archive_t* archive, libsarf_entry_t* file_header
 	}
 	else {
 		file_header = NULL;
-		return LSARF_ERR_A_CANNOT_OPEN;
+		return LSARF_ERR_CANNOT_OPEN;
 	}
 
 	return LSARF_OK;

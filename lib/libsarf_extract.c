@@ -71,7 +71,7 @@ int libsarf_extract(libsarf_archive_t* archive, const char* target, const char* 
 		output_file = fdopen(output_fd, "wb");
 
 		if (output_file == NULL) {
-			return LSARF_ERR_O_CANNOT_CREATE;
+			return LSARF_ERR_CANNOT_CREATE;
 		}
 
 		int64_t bytes_left = file_header->size;
@@ -99,7 +99,7 @@ int libsarf_extract(libsarf_archive_t* archive, const char* target, const char* 
 	}
 
 	if (file_found == -1)
-		return LSARF_ERR_TiA_NOT_FOUND;
+		return LSARF_ERR_NOT_FOUND;
 
 	return LSARF_OK;
 }

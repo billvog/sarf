@@ -2,7 +2,7 @@
 
 int libsarf_add_file(libsarf_archive_t* archive, const char* target, const char* destination) {
 	if (archive->open_mode == LSARF_READ_ONLY)
-		return LSARF_ERR_A_CANNOT_WRITE;
+		return LSARF_ERR_CANNOT_WRITE;
 	
 	struct stat target_stat;
 	stat(target, &target_stat);
@@ -28,13 +28,13 @@ int libsarf_add_file(libsarf_archive_t* archive, const char* target, const char*
 	}
 
 	if (strlen(final_dest) > PATH_MAX) {
-		return LSARF_ERR_T_FILENAME_MAX;
+		return LSARF_ERR_FILENAME_MAX;
 	}
 
 	if (S_ISREG(target_stat.st_mode)) {
 		FILE* target_file = fopen(target, "rb");
 		if (target_file == NULL) {
-			return LSARF_ERR_T_CANNOT_OPEN;
+			return LSARF_ERR_CANNOT_OPEN;
 		}
 
 		// Write file header to archive

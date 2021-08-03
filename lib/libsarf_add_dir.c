@@ -2,16 +2,16 @@
 
 int libsarf_add_dir(libsarf_archive_t* archive, const char* target_dir, const char* destination, sarf_flags_t flags) {
 	if (archive->open_mode == LSARF_READ_ONLY)
-		return LSARF_ERR_A_CANNOT_WRITE;
+		return LSARF_ERR_CANNOT_WRITE;
 
 
-	if (destination != NULL && strlen(destination) > 0) {
-		struct stat dest_stat;
-		stat(destination, &dest_stat);
-		if (S_ISDIR(dest_stat.st_mode) && destination[strlen(destination)-1] != '/') {
-			return LSARF_ERR_D_INVALID;
-		}
-	}
+	// if (destination != NULL && strlen(destination) > 0) {
+	// 	struct stat dest_stat;
+	// 	stat(destination, &dest_stat);
+	// 	if (S_ISDIR(dest_stat.st_mode) && destination[strlen(destination)-1] != '/') {
+	// 		return LSARF_ERR_D_INVALID;
+	// 	}
+	// }
 
 	DIR *dir = opendir(target_dir);
 	if (dir != NULL) {

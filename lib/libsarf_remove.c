@@ -2,14 +2,14 @@
 
 int libsarf_remove(libsarf_archive_t* archive, const char* target) {
 	if (archive->open_mode == LSARF_READ_ONLY)
-		return LSARF_ERR_A_CANNOT_WRITE;
+		return LSARF_ERR_CANNOT_WRITE;
 
 	char *temp_filename = malloc(sizeof(char) * 100);
 	sprintf(temp_filename, "%s.sarf.%d", basename(archive->filename), abs(rand() * 1000));
 
 	FILE* temp_ar = fopen(temp_filename, "wb");
 	if (temp_ar == NULL) {
-		return LSARF_ERR_TMP_CANNOT_CREATE;
+		return LSARF_ERR_CANNOT_CREATE;
 	}
 
 	int file_found = -1;
@@ -62,11 +62,11 @@ int libsarf_remove(libsarf_archive_t* archive, const char* target) {
 
 	if (file_found == -1) {
 		remove(temp_filename);
-		return LSARF_ERR_TiA_NOT_FOUND;
+		return LSARF_ERR_NOT_FOUND;
 	}
 
 	if (rename(temp_filename, archive->filename) != 0) {
-		return LSARF_ERR_O_CANNOT_CREATE;
+		return LSARF_ERR_CANNOT_CREATE;
 	}
 
 	return LSARF_OK;

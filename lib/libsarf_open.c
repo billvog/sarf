@@ -5,7 +5,7 @@ int libsarf_open(libsarf_archive_t* archive, const char* filename, sarf_flags_t 
 	int exists = stat(filename, &archive_stat);
 	
 	if (!(flags & LSARF_CREATE) && exists != 0) {
-		return LSARF_ERR_A_NOT_EXISTS;
+		return LSARF_ERR_NOT_EXISTS;
 	}
 
 	FILE* archive_file;
@@ -21,7 +21,7 @@ int libsarf_open(libsarf_archive_t* archive, const char* filename, sarf_flags_t 
 	}
 
 	if (archive_file == NULL) {
-		return LSARF_ERR_A_CANNOT_OPEN;
+		return LSARF_ERR_CANNOT_OPEN;
 	}
 
 	archive->filename = malloc(sizeof(char) * strlen(filename) + 1);
