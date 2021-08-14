@@ -1,23 +1,22 @@
 #include "sarf_int.h"
 
-int libsarf_open(libsarf_archive_t* archive, const char* filename, sarf_flags_t flags) {
+int sarf_open(libsarf_archive_t* archive, const char* filename, sarf_flags_t flags) {
 	struct stat archive_stat;
-	int exists = stat(filename, &archive_stat);
-	
-	if (!(flags & LSARF_CREATE) && exists != 0) {
-		return LSARF_ERR_NOT_EXISTS;
-	}
+	stat(filename, &archive_stat);
 
 	FILE* archive_file;
 
-	if ((flags & LSARF_RDONLY) == 0) {
+	if (flags & LSARF_RDONLY) {
 		archive_file = fopen(filename, "rb");	
 	}
-	else {
+	else if (flags & LSARF_WRONLY) {
 		if (flags & LSARF_TRUNC)
 			archive_file = fopen(filename, "wb+");
 		else
 			archive_file = fopen(filename, "ab+");
+	}
+	else {
+		return LSARF_ERR_INV_FLAGS;
 	}
 
 	if (archive_file == NULL) {
@@ -26,7 +25,7 @@ int libsarf_open(libsarf_archive_t* archive, const char* filename, sarf_flags_t 
 
 	archive->filename = strdup(filename);
 	archive->file = archive_file;
-	archive->open_mode = flags & LSARF_READ_ONLY ? LSARF_READ_ONLY : LSARF_WRITE;
+	archive->open_mode = flags & LSARF_RDONLY ? LSARF_READ_ONLY : LSARF_WRITE_ONLY;
 	archive->stat = archive_stat;
 
 	return LSARF_OK;

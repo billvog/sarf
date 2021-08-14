@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 // Configuration
-#define LSARF_CHUNK_SIZE 524288 // 512KB
+#define LSARF_CHUNK_SIZE 524288
 
 // Errors
 #define LSARF_NOK						-1
@@ -44,12 +44,13 @@ extern "C" {
 #define LSARF_ERR_FILENAME_MAX			4
 #define LSARF_ERR_CANNOT_WRITE			5
 #define LSARF_ERR_NOT_EXISTS			6
+#define LSARF_ERR_INV_FLAGS				7
 
 // Flags
 #define LSARF_CREATE					1u
 #define LSARF_TRUNC						2u
 #define LSARF_RDONLY					3u
-#define LSARF_RECURSIVE 				4u
+#define LSARF_WRONLY 					4u
 
 // Types
 typedef uint32_t sarf_flags_t;
@@ -58,7 +59,7 @@ typedef int libsarf_open_archive_mode_t;
 // Enums
 enum libsarf_open_archive_mode {
 	LSARF_READ_ONLY = 1,
-	LSARF_WRITE
+	LSARF_WRITE_ONLY
 };
 
 // Structs
@@ -71,6 +72,7 @@ typedef struct {
 } libsarf_archive_t;
 
 typedef struct {
+	int archived_with_version;
 	char* filename;
 	mode_t mode;
 	uid_t uid;
@@ -80,24 +82,23 @@ typedef struct {
 } libsarf_entry_t;
 
 // Functions
-int libsarf_init();
-const char* libsarf_err2str(int err);
-const char* libsarf_errorstr(libsarf_archive_t* archive);
+const char* sarf_err2str(int err);
+const char* sarf_errorstr(libsarf_archive_t* archive);
 
-int libsarf_open(libsarf_archive_t* archive, const char* filename, sarf_flags_t flags);
-int libsarf_close(libsarf_archive_t* archive);
+int sarf_open(libsarf_archive_t* archive, const char* filename, sarf_flags_t flags);
+int sarf_close(libsarf_archive_t* archive);
 
-int libsarf_count_entries(libsarf_archive_t* archive, int* file_count, const char* search);
+int sarf_entry_from_stat(libsarf_entry_t* entry, struct stat stat);
+void sarf_free_entry(libsarf_entry_t* entry);
+void sarf_entry_set_name(libsarf_entry_t* entry, const char *name);
 
-int libsarf_entry_from_stat(libsarf_entry_t* file_header, struct stat stat);
-void libsarf_free_entry(libsarf_entry_t* entry);
-void libsarf_entry_set_name(libsarf_entry_t* entry, const char *name);
+int sarf_skip_file_data(libsarf_archive_t* archive, libsarf_entry_t* entry);
 
-int libsarf_read_entry(libsarf_archive_t* archive, libsarf_entry_t* file_header);
-int libsarf_write_entry(libsarf_archive_t* archive, libsarf_entry_t* file_header);
+int sarf_read_entry(libsarf_archive_t* archive, libsarf_entry_t* entry);
+int sarf_write_entry(libsarf_archive_t* archive, libsarf_entry_t* entry);
 
-size_t libsarf_read(libsarf_archive_t* archive, void *buffer, size_t size);
-size_t libsarf_write(libsarf_archive_t* archive, void *buffer, size_t size);
+size_t sarf_read(libsarf_archive_t* archive, void *buffer, size_t size);
+size_t sarf_write(libsarf_archive_t* archive, void *buffer, size_t size);
 
 #endif
 #ifdef __cplusplus

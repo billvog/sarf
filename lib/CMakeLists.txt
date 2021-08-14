@@ -6,16 +6,16 @@ add_compile_options(-Wall -Wextra -g -Os)
 add_compile_definitions(LSARF_BUILT_OS="${CMAKE_SYSTEM_NAME}")
 
 list(APPEND LIB_SOURCE_FILES
-	libsarf_close.c
-	libsarf_count_entries.c
-	libsarf_entry.c	
-	libsarf_err2str.c
-	libsarf_init.c
-	libsarf_open.c
-	libsarf_read_entry.c
-	libsarf_read.c
-	libsarf_write_entry.c
-	libsarf_write.c
+	sarf_close.c
+	sarf_entry.c	
+	sarf_error.c
+	sarf_init.c
+	sarf_open.c
+	sarf_read_entry.c
+	sarf_read.c
+	sarf_skip_file_data.c	
+	sarf_write_entry.c
+	sarf_write.c
 )
 
 list(APPEND LIB_HEADER_FILES

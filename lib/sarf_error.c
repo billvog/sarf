@@ -1,6 +1,6 @@
 #include "sarf_int.h"
 
-const char* libsarf_err2str(int err) {
+const char* sarf_err2str(int err) {
 	char* error_str = malloc(sizeof(char) * 100);
 	switch (err) {
 		case LSARF_ERR_CANNOT_OPEN:
@@ -21,6 +21,9 @@ const char* libsarf_err2str(int err) {
 		case LSARF_ERR_NOT_EXISTS:
 			strcpy(error_str, "Not exists");
 			break;
+		case LSARF_ERR_INV_FLAGS:
+			strcpy(error_str, "Invalid flags used");
+			break;
 		case LSARF_OK:
 			error_str = NULL;
 			break;
@@ -32,6 +35,6 @@ const char* libsarf_err2str(int err) {
 	return error_str;
 }
 
-const char* libsarf_errorstr(libsarf_archive_t* archive) {
-	return libsarf_err2str(archive->error);
+const char* sarf_errorstr(libsarf_archive_t* archive) {
+	return sarf_err2str(archive->error);
 }

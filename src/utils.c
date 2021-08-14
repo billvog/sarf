@@ -52,7 +52,7 @@ void format_epoch(char *str, long timestamp) {
 void format_uid(char *str, uint16_t uid) {
 	struct passwd *pws = getpwuid(uid);
 	if (pws == NULL)
-		strcpy(str, "(unknown)");
+		strcpy(str, "n/a");
 	else
 		strcpy(str, pws->pw_name);
 }
