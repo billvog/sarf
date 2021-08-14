@@ -10,7 +10,7 @@ int libsarf_open(libsarf_archive_t* archive, const char* filename, sarf_flags_t 
 
 	FILE* archive_file;
 
-	if (flags & LSARF_READ_ONLY) {
+	if ((flags & LSARF_RDONLY) == 0) {
 		archive_file = fopen(filename, "rb");	
 	}
 	else {
@@ -24,9 +24,7 @@ int libsarf_open(libsarf_archive_t* archive, const char* filename, sarf_flags_t 
 		return LSARF_ERR_CANNOT_OPEN;
 	}
 
-	archive->filename = malloc(sizeof(char) * strlen(filename) + 1);
-	strcpy(archive->filename, filename);
-
+	archive->filename = strdup(filename);
 	archive->file = archive_file;
 	archive->open_mode = flags & LSARF_READ_ONLY ? LSARF_READ_ONLY : LSARF_WRITE;
 	archive->stat = archive_stat;

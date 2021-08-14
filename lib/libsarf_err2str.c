@@ -16,7 +16,7 @@ const char* libsarf_err2str(int err) {
 			sprintf(error_str, "File name has exceeded the maximum path length (%d)", PATH_MAX);
 			break;
 		case LSARF_ERR_CANNOT_WRITE:
-			strcpy(error_str, "Couldn't write: Not permitted");
+			strcpy(error_str, "Couldn't write");
 			break;
 		case LSARF_ERR_NOT_EXISTS:
 			strcpy(error_str, "Not exists");
@@ -30,4 +30,8 @@ const char* libsarf_err2str(int err) {
 	}
 
 	return error_str;
+}
+
+const char* libsarf_errorstr(libsarf_archive_t* archive) {
+	return libsarf_err2str(archive->error);
 }

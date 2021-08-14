@@ -7,7 +7,7 @@ int libsarf_count_entries(libsarf_archive_t* archive, int* file_count, const cha
 	fseek(archive->file, 0, SEEK_SET);
 	while (ftell(archive->file) < archive->stat.st_size) {
 		libsarf_entry_t* file_header = malloc(sizeof(libsarf_entry_t));
-		int res = _libsarf_read_entry(archive, file_header);
+		int res = libsarf_read_entry(archive, file_header);
 		if (res != 0)
 			return res;
 

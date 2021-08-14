@@ -1,6 +1,6 @@
 #include "sarf_int.h"
 
-int _libsarf_read_entry(libsarf_archive_t* archive, libsarf_entry_t* file_header) {
+int libsarf_read_entry(libsarf_archive_t* archive, libsarf_entry_t* file_header) {
 	if (!feof(archive->file)) {
 		// filename size
 		char *filename_size_str = malloc(sizeof(char) * 4);
@@ -45,7 +45,7 @@ int _libsarf_read_entry(libsarf_archive_t* archive, libsarf_entry_t* file_header
 	}
 	else {
 		file_header = NULL;
-		return LSARF_ERR_CANNOT_OPEN;
+		return LSARF_NOK;
 	}
 
 	return LSARF_OK;

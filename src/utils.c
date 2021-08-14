@@ -18,20 +18,20 @@ void format_file_size(char *str, int64_t size) {
 	double decimal_size;
 	char* unit = malloc(sizeof(char) * 6);
 
-	if (size >= 1000000000000) {
-		decimal_size = (double) size / 1000000000000.0;
+	if (size >= 1099511627776) {
+		decimal_size = (double) size / 1099511627776.0;
 		strcpy(unit, "TB");
 	}
-	else if (size >= 1000000000) {
-		decimal_size = (double) size / 1000000000.0;
+	else if (size >= 1073741824) {
+		decimal_size = (double) size / 1073741824.0;
 		strcpy(unit, "GB");
 	}
-	else if (size >= 1000000) {
-		decimal_size = (double) size / 1000000.0;
+	else if (size >= 1048576) {
+		decimal_size = (double) size / 1048576.0;
 		strcpy(unit, "MB");
 	}
-	else if (size >= 1000) {
-		decimal_size = (double) size / 1000.0;
+	else if (size >= 1024) {
+		decimal_size = (double) size / 1024.0;
 		strcpy(unit, "KB");
 	}
 	else {
@@ -60,7 +60,7 @@ void format_uid(char *str, uint16_t uid) {
 void format_gid(char *str, uint16_t gid) {
 	struct group *grp = getgrgid(gid);
 	if (grp == NULL)
-		strcpy(str, "(unknown)");
+		strcpy(str, "n/a");
 	else
 		strcpy(str, grp->gr_name);
 }
