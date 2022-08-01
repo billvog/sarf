@@ -10,11 +10,6 @@ list(APPEND SOURCE_FILES
 	utils.c
 )
 
-find_library(LIBSARF REQUIRED
-    NAMES sarf
-    HINTS "${build_dir}/lib"
-)
-
 add_executable(libtest ${SOURCE_FILES})
 target_include_directories(libtest PUBLIC "../lib")
-target_link_libraries(libtest ${LIBSARF})
+target_link_libraries(libtest sarf)

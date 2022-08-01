@@ -15,11 +15,10 @@ int print_help() {
 	printf("sarf, a simple archiving tool for unix.\n");
 	printf("Find open-source @ https://github.com/billvog/sarf\n\n");
 	printf("Usage: sarf [--help] [--version]\n");
-	printf("            [command] [archive] [switches...] [files...]\n\n");
+	printf("            [archive] [command] [switches...] [files...]\n\n");
 	printf("Commands:\n");
-	printf("  -a Add  -x Extract  -l List\n\n");
+	printf("  -a Add  -x Extract (all)  -l List\n\n");
 	printf("Switches:\n");
-	printf("  -d Specifies the destination of a file in archive\n");
 	printf("  -o Specifies the output path in case of extracting\n");
 	return 0;
 }
@@ -33,15 +32,17 @@ int main(int argc, const char *argv[]) {
 		return 0;
 	}
 	else {
-		if (argc < 3) {
+		if (argc < 2) {
 			printf("E: please provide an archive file\n");
 			exit(1);
 		}
+		else if (argc < 3) {
+			printf("E: please provide a command\n");
+			exit(1);
+		}
 
-		char* command = strdup(argv[1]);
-
-		char* archive_file = malloc(sizeof(char) * 64);
-		strcpy(archive_file, argv[2]);
+		char* archive_file = strdup(argv[1]);
+		char* command = strdup(argv[2]);
 
 		// add file
 		if (strcmp(command, "-a") == 0) {
@@ -58,27 +59,41 @@ int main(int argc, const char *argv[]) {
 				struct stat target_stat;
 				stat(target_file, &target_stat);
 
-				FILE *fp = fopen(target_file, "rb");
-				if (fp == NULL) {
-					printf("E: Cannot open: %s\n", strerror(errno));
-					exit(1);
-				}
-
 				libsarf_entry_t *entry = malloc(sizeof(libsarf_entry_t));
-				sarf_entry_from_stat(entry, target_stat);
-				sarf_entry_set_name(entry, target_file);
 
-				ok = sarf_write_entry(archive, entry);
-				if (ok != LSARF_OK) {
-					printf("E: %s: %s\n", target_file, sarf_errorstr(archive));
-					exit(1);
+				// Check if it's directory
+				if (target_stat.st_mode & S_IFDIR) {
+					sarf_entry_from_stat(entry, target_stat);
+					sarf_entry_set_name(entry, target_file);
+
+					ok = sarf_write_entry(archive, entry);
+					if (ok != LSARF_OK) {
+						printf("E: %s: %s\n", target_file, sarf_errorstr(archive));
+						exit(1);
+					}
+				} else {
+					FILE *fp = fopen(target_file, "rb");
+					if (fp == NULL) {
+						printf("E: Cannot open: %s\n", strerror(errno));
+						exit(1);
+					}
+
+					sarf_entry_from_stat(entry, target_stat);
+					sarf_entry_set_name(entry, target_file);
+
+					ok = sarf_write_entry(archive, entry);
+					if (ok != LSARF_OK) {
+						printf("E: %s: %s\n", target_file, sarf_errorstr(archive));
+						exit(1);
+					}
+
+					char buffer[entry->size];
+					fread(buffer, entry->size, 1, fp);
+					sarf_write(archive, buffer, entry->size);
+
+					fclose(fp);
 				}
 
-				char buffer[entry->size];
-				fread(buffer, entry->size, 1, fp);
-				sarf_write(archive, buffer, entry->size);
-
-				fclose(fp);
 				sarf_free_entry(entry);
 				sarf_close(archive);
 
@@ -89,7 +104,7 @@ int main(int argc, const char *argv[]) {
 				return 1;
 			}
 		}
-		// extract files
+		// extract all files
 		else if (strcmp(command, "-x") == 0) {
 			libsarf_archive_t* archive = malloc(sizeof(libsarf_archive_t));
 			int ok = sarf_open(archive, archive_file, LSARF_RDONLY);
@@ -98,25 +113,62 @@ int main(int argc, const char *argv[]) {
 				exit(1);
 			}
 
-			libsarf_entry_t *entry = malloc(sizeof(libsarf_entry_t));
-			while (sarf_read_entry(archive, entry) != LSARF_NOK) {
-				FILE *fp = fopen(entry->filename, "wb");
-				if (fp == NULL) {
-					printf("E: Cannot open: %s\n", strerror(errno));
+			char* output_path = NULL;
+			if (argc > 3 && strcmp(argv[3], "-o") == 0) {
+				if (argc > 4) {
+					output_path = strdup(argv[4]);
+
+					// remove trailling slash
+					if (output_path[strlen(output_path) - 1] == '/') {
+						output_path[strlen(output_path) - 1] = '\0';
+					}
+				}
+				else {
+					printf("E: please provide an output path\n");
 					exit(1);
 				}
+			}
 
-				char buffer[entry->size];
-				sarf_read(archive, buffer, entry->size);
-				fwrite(buffer, entry->size, 1, fp);
+			libsarf_entry_t *entry = malloc(sizeof(libsarf_entry_t));
+			while (sarf_read_entry(archive, entry) != LSARF_NOK) {
+				char* output_filepath = NULL;
+				if (output_path != NULL) {
+					output_filepath = malloc(sizeof(char) * (strlen(output_path) + strlen(entry->filename)));
+					sprintf(output_filepath, "%s/%s", output_path, entry->filename);
+				}
 
-				fclose(fp);
+				if (output_filepath[strlen(output_filepath) - 1] == '/') {
+					if (mkdir(output_filepath, entry->mode) != 0) {
+						if (errno != EEXIST) {
+							printf("E: %s -> %s: Cannot create directory: %s\n", entry->filename, output_filepath, strerror(errno));
+							exit(1);
+						}
+					}
 
-				printf("e %s\n", entry->filename);
+					sarf_skip_file_data(archive, entry);
+				}
+				else {
+					int fd = open(output_filepath == NULL ? entry->filename : output_filepath, O_RDWR | O_CREAT, entry->mode);
+					FILE *fp = fdopen(fd, "wb");
+					if (fp == NULL) {
+						printf("E: Cannot open: %s\n", strerror(errno));
+						exit(1);
+					}
+
+					char buffer[entry->size];
+					sarf_read(archive, buffer, entry->size);
+					fwrite(buffer, entry->size, 1, fp);
+
+					fclose(fp);
+				}
+
+				printf("e %s -> %s\n", entry->filename, output_filepath);
+				free(output_filepath);
 			}
 
 			sarf_free_entry(entry);
 			sarf_close(archive);
+			free(output_path);
 		}
 		// list files
 		else if (strcmp(command, "-l") == 0) {
