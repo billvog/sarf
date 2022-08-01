@@ -18,7 +18,7 @@ const char* sarf_err2str(int err) {
 		case LSARF_ERR_CANNOT_WRITE:
 			strcpy(error_str, "Couldn't write");
 			break;
-		case LSARF_ERR_NOT_EXISTS:
+		case LSARF_ERR_NOT_EXIST:
 			strcpy(error_str, "Not exists");
 			break;
 		case LSARF_ERR_INV_FLAGS:

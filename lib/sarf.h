@@ -43,8 +43,8 @@ extern "C" {
 #define LSARF_ERR_NOT_FOUND      3
 #define LSARF_ERR_FILENAME_MAX   4
 #define LSARF_ERR_CANNOT_WRITE   5
-#define LSARF_ERR_NOT_EXISTS     6
-#define LSARF_ERR_INV_FLAGS     7
+#define LSARF_ERR_NOT_EXIST      6
+#define LSARF_ERR_INV_FLAGS      7
 
 // Flags
 #define LSARF_CREATE   1u
