@@ -5,6 +5,7 @@ int sarf_write_entry(libsarf_archive_t* archive, libsarf_entry_t* entry) {
 		return LSARF_ERR_CANNOT_WRITE;
 	}
 
+	// to prevent absolute paths
 	if (entry->filename[0] == '/') {
 		entry->filename++;
 	}

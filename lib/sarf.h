@@ -25,8 +25,8 @@ extern "C" {
 #include <time.h>
 
 // Library built info
-#define LSARF_VERSION 			"0.0.12"
-#define LSARF_ARCHIVE_VERSION 	1
+#define LSARF_VERSION          "0.12"
+#define LSARF_ARCHIVE_VERSION  1
 
 #ifndef LSARF_BUILT_OS
 #define LSARF_BUILT_OS "OS"
@@ -36,21 +36,21 @@ extern "C" {
 #define LSARF_CHUNK_SIZE 524288
 
 // Errors
-#define LSARF_NOK						-1
-#define LSARF_OK 						0
-#define LSARF_ERR_CANNOT_OPEN			1
-#define LSARF_ERR_CANNOT_CREATE			2
-#define LSARF_ERR_NOT_FOUND				3
-#define LSARF_ERR_FILENAME_MAX			4
-#define LSARF_ERR_CANNOT_WRITE			5
-#define LSARF_ERR_NOT_EXISTS			6
-#define LSARF_ERR_INV_FLAGS				7
+#define LSARF_NOK               -1
+#define LSARF_OK                 0
+#define LSARF_ERR_CANNOT_OPEN    1
+#define LSARF_ERR_CANNOT_CREATE  2
+#define LSARF_ERR_NOT_FOUND      3
+#define LSARF_ERR_FILENAME_MAX   4
+#define LSARF_ERR_CANNOT_WRITE   5
+#define LSARF_ERR_NOT_EXISTS     6
+#define LSARF_ERR_INV_FLAGS     7
 
 // Flags
-#define LSARF_CREATE					1u
-#define LSARF_TRUNC						2u
-#define LSARF_RDONLY					3u
-#define LSARF_WRONLY 					4u
+#define LSARF_CREATE   1u
+#define LSARF_TRUNC    2u
+#define LSARF_RDONLY   3u
+#define LSARF_WRONLY   4u
 
 // Types
 typedef uint32_t sarf_flags_t;

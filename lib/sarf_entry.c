@@ -1,11 +1,12 @@
 #include "sarf_int.h"
 
 int sarf_entry_from_stat(libsarf_entry_t* file_header, struct stat stat) {
-	file_header->size = stat.st_size;
+	file_header->size = stat.st_mode & S_IFDIR ? 0 : stat.st_size;
 	file_header->mode = stat.st_mode;
 	file_header->uid = stat.st_uid;
 	file_header->gid = stat.st_gid;
 	file_header->mod_time = stat.st_mtimespec.tv_nsec;
+
 	return LSARF_OK;
 }
 
