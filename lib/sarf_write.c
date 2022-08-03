@@ -5,6 +5,6 @@ size_t sarf_write(libsarf_archive_t* archive, void *buffer, size_t size) {
 		archive->error = LSARF_ERR_CANNOT_WRITE;
 		return -1;
 	}
-	
+
 	return fwrite(buffer, size, 1, archive->file);
 }

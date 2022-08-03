@@ -1,11 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.14)
-
-project(libsarf)
-
-add_compile_options(-Wall -Wextra -g -Os)
-add_compile_definitions(LSARF_BUILT_OS="${CMAKE_SYSTEM_NAME}")
-
-list(APPEND LIB_SOURCE_FILES
+list(APPEND LIBSARF_SOURCE_FILES
 	sarf_close.c
 	sarf_entry.c	
 	sarf_error.c
@@ -18,9 +11,10 @@ list(APPEND LIB_SOURCE_FILES
 	sarf_write.c
 )
 
-list(APPEND LIB_HEADER_FILES
+list(APPEND LIBSARF_HEADER_FILES
 	sarf.h
 	sarf_int.h
 )
 
-add_library(sarf ${LIB_SOURCE_FILES} ${LIB_HEADER_FILES})
+add_library(sarf STATIC ${LIBSARF_SOURCE_FILES})
+target_include_directories(sarf PUBLIC ${LIBSARF_HEADER_FILES})

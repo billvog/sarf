@@ -55,6 +55,7 @@ extern "C" {
 // Types
 typedef uint32_t sarf_flags_t;
 typedef int libsarf_open_archive_mode_t;
+typedef int libsarf_compression_level_t;
 
 // Enums
 enum libsarf_open_archive_mode {
