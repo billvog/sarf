@@ -46,7 +46,7 @@ int main(int argc, const char *argv[]) {
 
 		// add file
 		if (strcmp(command, "-a") == 0) {
-			if (argc > 2) {
+			if (argc > 3) {
 				libsarf_archive_t* archive = malloc(sizeof(libsarf_archive_t));
 				int ok = sarf_open(archive, archive_file, LSARF_WRONLY);
 				if (ok != LSARF_OK) {
