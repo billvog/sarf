@@ -132,12 +132,16 @@ int main(int argc, const char *argv[]) {
 			libsarf_entry_t *entry = malloc(sizeof(libsarf_entry_t));
 			while (sarf_read_entry(archive, entry) != LSARF_NOK) {
 				char* output_filepath = NULL;
-				if (output_path != NULL) {
+				
+				if (output_path == NULL) {
+					output_filepath = strdup(entry->filename);
+				}
+				else {
 					output_filepath = malloc(sizeof(char) * (strlen(output_path) + strlen(entry->filename)));
 					sprintf(output_filepath, "%s/%s", output_path, entry->filename);
 				}
 
-				if (output_filepath[strlen(output_filepath) - 1] == '/') {
+				if (output_filepath != NULL && output_filepath[strlen(output_filepath) - 1] == '/') {
 					if (mkdir(output_filepath, entry->mode) != 0) {
 						if (errno != EEXIST) {
 							printf("E: %s -> %s: Cannot create directory: %s\n", entry->filename, output_filepath, strerror(errno));
@@ -148,7 +152,7 @@ int main(int argc, const char *argv[]) {
 					sarf_skip_file_data(archive, entry);
 				}
 				else {
-					int fd = open(output_filepath == NULL ? entry->filename : output_filepath, O_RDWR | O_CREAT, entry->mode);
+					int fd = open(output_filepath, O_RDWR | O_CREAT, entry->mode);
 					FILE *fp = fdopen(fd, "wb");
 					if (fp == NULL) {
 						printf("E: Cannot open: %s\n", strerror(errno));
