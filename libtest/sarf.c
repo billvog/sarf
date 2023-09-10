@@ -15,10 +15,10 @@ int print_help() {
 	printf("sarf, a simple archiving tool for unix.\n");
 	printf("Find open-source @ https://github.com/billvog/sarf\n\n");
 	printf("Usage: sarf [--help] [--version]\n");
-	printf("            [archive] [command] [switches...] [files...]\n\n");
+	printf("            [archive] [command] [options...] [files...]\n\n");
 	printf("Commands:\n");
 	printf("  -a Add  -x Extract (all)  -l List\n\n");
-	printf("Switches:\n");
+	printf("Options:\n");
 	printf("  -o Specifies the output path in case of extracting\n");
 	return 0;
 }
